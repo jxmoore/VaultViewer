@@ -75,16 +75,23 @@
             <Setter Property="Padding" Value="2" />
         </Style>
 
-        <!-- Data template: a single vault row (used in both list and tree) -->
-        <DataTemplate x:Key="VaultRowTemplate" DataType="{x:Type models:VaultInfo}">
-            <StackPanel>
-                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="13" TextTrimming="CharacterEllipsis" />
-                <TextBlock FontSize="11" Foreground="{StaticResource MutedBrush}" TextTrimming="CharacterEllipsis">
-                    <Run Text="{Binding SubscriptionName, Mode=OneWay}" />
-                    <Run Text="  •  " />
-                    <Run Text="{Binding ResourceGroup, Mode=OneWay}" />
-                </TextBlock>
-            </StackPanel>
+        <!-- Data template: a single selectable vault row (used in both list and tree) -->
+        <DataTemplate x:Key="VaultRowTemplate" DataType="{x:Type vm:SelectableVault}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                <StackPanel Grid.Column="1">
+                    <TextBlock Text="{Binding Vault.Name}" FontWeight="SemiBold" FontSize="13" TextTrimming="CharacterEllipsis" />
+                    <TextBlock FontSize="11" Foreground="{StaticResource MutedBrush}" TextTrimming="CharacterEllipsis">
+                        <Run Text="{Binding Vault.SubscriptionName, Mode=OneWay}" />
+                        <Run Text="  •  " />
+                        <Run Text="{Binding Vault.ResourceGroup, Mode=OneWay}" />
+                    </TextBlock>
+                </StackPanel>
+            </Grid>
         </DataTemplate>
 
     </Window.Resources>
@@ -126,12 +133,31 @@
             <!-- ===== Left: action bar ===== -->
             <Border Grid.Column="0" Background="{StaticResource PanelBrush}" CornerRadius="10"
                     BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
-                <TabControl Background="Transparent" BorderThickness="0" Padding="12">
-                    <TabControl.Resources>
-                        <Style TargetType="TabPanel">
-                            <Setter Property="Margin" Value="0,0,0,10" />
-                        </Style>
-                    </TabControl.Resources>
+                <DockPanel>
+
+                    <!-- Shared selection toolbar (applies across both tabs) -->
+                    <Grid DockPanel.Dock="Top" Margin="12,12,12,0">
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="Select all" Command="{Binding SelectAllCommand}"
+                                    Padding="10,4" FontSize="12" />
+                            <Button Content="Clear" Command="{Binding SelectNoneCommand}"
+                                    Padding="10,4" FontSize="12" Margin="6,0,0,0" />
+                        </StackPanel>
+                        <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"
+                                   Foreground="{StaticResource MutedBrush}">
+                            <Run Text="{Binding SelectedVaultCount, Mode=OneWay}" />
+                            <Run Text=" of " />
+                            <Run Text="{Binding VaultCount, Mode=OneWay}" />
+                            <Run Text=" selected" />
+                        </TextBlock>
+                    </Grid>
+
+                    <TabControl Background="Transparent" BorderThickness="0" Padding="12">
+                        <TabControl.Resources>
+                            <Style TargetType="TabPanel">
+                                <Setter Property="Margin" Value="0,0,0,10" />
+                            </Style>
+                        </TabControl.Resources>
 
                     <!-- Vaults tab -->
                     <TabItem Header="Vaults">
@@ -184,6 +210,10 @@
                                                               ItemsSource="{Binding VaultsView}"
                                                               ItemTemplate="{StaticResource VaultRowTemplate}">
                                         <StackPanel Orientation="Horizontal">
+                                            <CheckBox IsThreeState="True" IsChecked="{Binding IsAllSelected, Mode=OneWay}"
+                                                      Command="{Binding ToggleAllCommand}"
+                                                      VerticalAlignment="Center" Margin="0,0,8,0"
+                                                      ToolTip="Select / deselect all vaults in this subscription" />
                                             <TextBlock Text="📁" FontSize="13" Margin="0,0,6,0" />
                                             <TextBlock Text="{Binding SubscriptionName}" FontWeight="SemiBold" FontSize="13" />
                                             <TextBlock FontSize="11" Foreground="{StaticResource MutedBrush}" Margin="6,0,0,0"
@@ -196,7 +226,8 @@
                             </TreeView>
                         </Grid>
                     </TabItem>
-                </TabControl>
+                    </TabControl>
+                </DockPanel>
             </Border>
 
             <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Stretch"

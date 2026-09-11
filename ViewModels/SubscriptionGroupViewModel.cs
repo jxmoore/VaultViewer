@@ -7,19 +7,26 @@ namespace VaultViewer.ViewModels;
 
 /// <summary>
 /// A subscription plus its vaults, for the "Subscriptions" tab tree. Applies the
-/// shared filter text against both the subscription name and its vault names.
+/// shared filter text against both the subscription name and its vault names, and
+/// offers a tri-state "select all vaults in this subscription" checkbox.
 /// </summary>
 public sealed class SubscriptionGroupViewModel : ViewModelBase
 {
     private string _filter = string.Empty;
 
-    public SubscriptionGroupViewModel(SubscriptionInfo info)
+    public SubscriptionGroupViewModel(SubscriptionInfo info, IReadOnlyList<SelectableVault> vaults)
     {
         SubscriptionName = info.DisplayName;
         SubscriptionId = info.SubscriptionId;
-        Vaults = new ObservableCollection<VaultInfo>(info.Vaults.OrderBy(v => v.Name, StringComparer.OrdinalIgnoreCase));
+        Vaults = new ObservableCollection<SelectableVault>(
+            vaults.OrderBy(v => v.Vault.Name, StringComparer.OrdinalIgnoreCase));
         VaultsView = CollectionViewSource.GetDefaultView(Vaults);
         VaultsView.Filter = VaultMatchesFilter;
+
+        foreach (var v in Vaults)
+            v.PropertyChanged += OnVaultChanged;
+
+        ToggleAllCommand = new RelayCommand(_ => ToggleAll());
     }
 
     public string SubscriptionName { get; }
@@ -28,9 +35,22 @@ public sealed class SubscriptionGroupViewModel : ViewModelBase
 
     public int VaultCount => Vaults.Count;
 
-    public ObservableCollection<VaultInfo> Vaults { get; }
+    public ObservableCollection<SelectableVault> Vaults { get; }
 
     public ICollectionView VaultsView { get; }
+
+    public RelayCommand ToggleAllCommand { get; }
+
+    /// <summary>True if all vaults selected, false if none, null if mixed.</summary>
+    public bool? IsAllSelected
+    {
+        get
+        {
+            if (Vaults.All(v => v.IsSelected)) return true;
+            if (Vaults.All(v => !v.IsSelected)) return false;
+            return null;
+        }
+    }
 
     /// <summary>True when the group itself or any of its vaults match the current filter.</summary>
     public bool IsVisible { get; private set; } = true;
@@ -43,10 +63,24 @@ public sealed class SubscriptionGroupViewModel : ViewModelBase
         var subMatches = _filter.Length == 0 ||
                          SubscriptionName.Contains(_filter, StringComparison.OrdinalIgnoreCase);
         var anyVaultMatches = _filter.Length == 0 ||
-                              Vaults.Any(v => v.Name.Contains(_filter, StringComparison.OrdinalIgnoreCase));
+                              Vaults.Any(v => v.Vault.Name.Contains(_filter, StringComparison.OrdinalIgnoreCase));
 
         IsVisible = subMatches || anyVaultMatches;
         OnPropertyChanged(nameof(IsVisible));
+    }
+
+    private void ToggleAll()
+    {
+        // If anything is unselected, select all; otherwise clear all.
+        var target = Vaults.Any(v => !v.IsSelected);
+        foreach (var v in Vaults)
+            v.IsSelected = target;
+    }
+
+    private void OnVaultChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(SelectableVault.IsSelected))
+            OnPropertyChanged(nameof(IsAllSelected));
     }
 
     private bool VaultMatchesFilter(object obj)
@@ -55,6 +89,6 @@ public sealed class SubscriptionGroupViewModel : ViewModelBase
             return true;
         if (SubscriptionName.Contains(_filter, StringComparison.OrdinalIgnoreCase))
             return true; // matching the subscription shows all its vaults
-        return obj is VaultInfo v && v.Name.Contains(_filter, StringComparison.OrdinalIgnoreCase);
+        return obj is SelectableVault v && v.Vault.Name.Contains(_filter, StringComparison.OrdinalIgnoreCase);
     }
 }

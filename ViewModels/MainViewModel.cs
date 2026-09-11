@@ -36,10 +36,12 @@ public sealed class MainViewModel : ViewModelBase
         RefreshCommand = new AsyncRelayCommand(_ => LoadAsync(), _ => !IsLoading);
         SearchCommand = new AsyncRelayCommand(_ => SearchAsync(), _ => !IsSearching && HasLoaded);
         CancelSearchCommand = new RelayCommand(_ => _searchCts?.Cancel(), _ => IsSearching);
+        SelectAllCommand = new RelayCommand(_ => SetAllSelected(true), _ => Vaults.Count > 0);
+        SelectNoneCommand = new RelayCommand(_ => SetAllSelected(false), _ => Vaults.Count > 0);
     }
 
-    // ---- Left pane: flat vault list ----
-    public ObservableCollection<VaultInfo> Vaults { get; } = new();
+    // ---- Left pane: flat vault list (shared selection instances) ----
+    public ObservableCollection<SelectableVault> Vaults { get; } = new();
     public ICollectionView VaultsView { get; }
 
     // ---- Left pane: subscription groups ----
@@ -52,6 +54,8 @@ public sealed class MainViewModel : ViewModelBase
     public AsyncRelayCommand RefreshCommand { get; }
     public AsyncRelayCommand SearchCommand { get; }
     public RelayCommand CancelSearchCommand { get; }
+    public RelayCommand SelectAllCommand { get; }
+    public RelayCommand SelectNoneCommand { get; }
 
     public string VaultFilter
     {
@@ -105,6 +109,7 @@ public sealed class MainViewModel : ViewModelBase
 
     public int VaultCount => Vaults.Count;
     public int SubscriptionCount => Subscriptions.Count;
+    public int SelectedVaultCount => Vaults.Count(v => v.IsSelected);
 
     public int ScanProgress
     {
@@ -142,6 +147,8 @@ public sealed class MainViewModel : ViewModelBase
         LoadProgress = 0;
         LoadTotal = 0;
         StatusText = "Signing in and discovering vaults…";
+        foreach (var sv in Vaults)
+            sv.PropertyChanged -= OnVaultSelectionChanged;
         Vaults.Clear();
         Subscriptions.Clear();
 
@@ -155,16 +162,26 @@ public sealed class MainViewModel : ViewModelBase
             });
             var subs = await Task.Run(() => _azure.DiscoverAsync(progress, CancellationToken.None));
 
-            var allVaults = subs.SelectMany(s => s.Vaults)
-                                .OrderBy(v => v.Name, StringComparer.OrdinalIgnoreCase);
-            foreach (var v in allVaults)
-                Vaults.Add(v);
+            // One SelectableVault per discovered vault, shared between both tabs so
+            // selection is consistent everywhere.
+            var selectableByVault = subs.SelectMany(s => s.Vaults)
+                                        .ToDictionary(v => v, v => new SelectableVault(v));
+
+            foreach (var sv in selectableByVault.Values.OrderBy(sv => sv.Vault.Name, StringComparer.OrdinalIgnoreCase))
+            {
+                sv.PropertyChanged += OnVaultSelectionChanged;
+                Vaults.Add(sv);
+            }
 
             foreach (var s in subs.OrderBy(s => s.DisplayName, StringComparer.OrdinalIgnoreCase))
-                Subscriptions.Add(new SubscriptionGroupViewModel(s));
+            {
+                var groupVaults = s.Vaults.Select(v => selectableByVault[v]).ToList();
+                Subscriptions.Add(new SubscriptionGroupViewModel(s, groupVaults));
+            }
 
             OnPropertyChanged(nameof(VaultCount));
             OnPropertyChanged(nameof(SubscriptionCount));
+            OnPropertyChanged(nameof(SelectedVaultCount));
             HasLoaded = true;
             StatusText = $"Found {Vaults.Count} vault(s) across {Subscriptions.Count} subscription(s).";
         }
@@ -187,6 +204,13 @@ public sealed class MainViewModel : ViewModelBase
             return;
         }
 
+        var vaultsSnapshot = Vaults.Where(v => v.IsSelected).Select(v => v.Vault).ToList();
+        if (vaultsSnapshot.Count == 0)
+        {
+            StatusText = "No vaults selected — tick at least one vault on the left to search.";
+            return;
+        }
+
         _searchCts?.Cancel();
         _searchCts = new CancellationTokenSource();
         var ct = _searchCts.Token;
@@ -194,11 +218,10 @@ public sealed class MainViewModel : ViewModelBase
         Results.Clear();
         IsSearching = true;
         ScanProgress = 0;
-        ScanTotal = Vaults.Count;
-        StatusText = $"Searching {Vaults.Count} vault(s) for secrets containing \"{query}\"…";
+        ScanTotal = vaultsSnapshot.Count;
+        StatusText = $"Searching {vaultsSnapshot.Count} selected vault(s) for secrets containing \"{query}\"…";
 
         var found = 0;
-        var vaultsSnapshot = Vaults.ToList();
 
         try
         {
@@ -219,8 +242,8 @@ public sealed class MainViewModel : ViewModelBase
             await Task.Run(() => _azure.SearchSecretsAsync(query, vaultsSnapshot, progress, OnMatch, ct), ct);
 
             StatusText = found == 0
-                ? $"No secrets found containing \"{query}\"."
-                : $"Found {found} secret(s) containing \"{query}\" across {Vaults.Count} vault(s).";
+                ? $"No secrets found containing \"{query}\" in {vaultsSnapshot.Count} selected vault(s)."
+                : $"Found {found} secret(s) containing \"{query}\" across {vaultsSnapshot.Count} selected vault(s).";
         }
         catch (OperationCanceledException)
         {
@@ -240,9 +263,23 @@ public sealed class MainViewModel : ViewModelBase
     {
         if (_vaultFilter.Length == 0)
             return true;
-        return obj is VaultInfo v &&
-               (v.Name.Contains(_vaultFilter, StringComparison.OrdinalIgnoreCase) ||
-                v.SubscriptionName.Contains(_vaultFilter, StringComparison.OrdinalIgnoreCase) ||
-                v.ResourceGroup.Contains(_vaultFilter, StringComparison.OrdinalIgnoreCase));
+        if (obj is not SelectableVault sv)
+            return false;
+        var v = sv.Vault;
+        return v.Name.Contains(_vaultFilter, StringComparison.OrdinalIgnoreCase) ||
+               v.SubscriptionName.Contains(_vaultFilter, StringComparison.OrdinalIgnoreCase) ||
+               v.ResourceGroup.Contains(_vaultFilter, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void SetAllSelected(bool selected)
+    {
+        foreach (var v in Vaults)
+            v.IsSelected = selected;
+    }
+
+    private void OnVaultSelectionChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(SelectableVault.IsSelected))
+            OnPropertyChanged(nameof(SelectedVaultCount));
     }
 }
