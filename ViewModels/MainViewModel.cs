@@ -23,6 +23,8 @@ public sealed class MainViewModel : ViewModelBase
     private int _scanTotal;
     private int _loadProgress;
     private int _loadTotal;
+    private bool _hasSearched;
+    private string _lastSearchQuery = string.Empty;
     private CancellationTokenSource? _searchCts;
 
     public MainViewModel()
@@ -96,7 +98,26 @@ public sealed class MainViewModel : ViewModelBase
     public bool IsSearching
     {
         get => _isSearching;
-        private set => SetField(ref _isSearching, value);
+        private set { if (SetField(ref _isSearching, value)) RaiseResultStates(); }
+    }
+
+    /// <summary>The query the current results belong to, shown in the empty-state message.</summary>
+    public string LastSearchQuery
+    {
+        get => _lastSearchQuery;
+        private set => SetField(ref _lastSearchQuery, value);
+    }
+
+    /// <summary>True while a search is running and nothing has come back yet — show the skeleton.</summary>
+    public bool ShowSearchSkeleton => SearchViewState.ShowSkeleton(IsSearching, Results.Count);
+
+    /// <summary>True when a finished search found nothing — show the empty-state message.</summary>
+    public bool ShowNoResults => SearchViewState.ShowNoResults(_hasSearched, IsSearching, Results.Count);
+
+    private void RaiseResultStates()
+    {
+        OnPropertyChanged(nameof(ShowSearchSkeleton));
+        OnPropertyChanged(nameof(ShowNoResults));
     }
 
     public bool HasLoaded
@@ -218,6 +239,8 @@ public sealed class MainViewModel : ViewModelBase
         var ct = _searchCts.Token;
 
         Results.Clear();
+        LastSearchQuery = query;
+        _hasSearched = true;
         IsSearching = true;
         ScanProgress = 0;
         ScanTotal = vaultsSnapshot.Count;
@@ -238,7 +261,10 @@ public sealed class MainViewModel : ViewModelBase
                 Interlocked.Increment(ref found);
                 // Marshal back to the UI thread to touch the ObservableCollection.
                 _dispatcher.BeginInvoke(() =>
-                    Results.Add(new SecretResultViewModel(match, _azure, m => StatusText = m, query)));
+                {
+                    Results.Add(new SecretResultViewModel(match, _azure, m => StatusText = m, query));
+                    RaiseResultStates(); // first result hides the skeleton
+                });
             }
 
             await Task.Run(() => _azure.SearchSecretsAsync(query, vaultsSnapshot, progress, OnMatch, ct), ct);
