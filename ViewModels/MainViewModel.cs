@@ -9,7 +9,7 @@ namespace VaultViewer.ViewModels;
 
 public sealed class MainViewModel : ViewModelBase
 {
-    private readonly AzureService _azure = new();
+    private readonly IAzureService _azure = new AzureService(new DefaultCredentialFactory());
     private readonly Dispatcher _dispatcher = Dispatcher.CurrentDispatcher;
 
     private string _vaultFilter = string.Empty;

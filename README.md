@@ -18,17 +18,32 @@ access across all your subscriptions, and lets you search secret **names** globa
 
 ## Authentication
 
-Uses `DefaultAzureCredential`, which tries, in order: environment variables →
-workload identity → managed identity → Visual Studio → **Azure CLI** → Azure
-PowerShell → Azure Developer CLI.
+Credentials are built by `DefaultCredentialFactory` as a two-link chain:
 
-The simplest path on a dev box:
+1. **`DefaultAzureCredential`** — tries, in order: environment variables →
+   workload identity → managed identity → Visual Studio → **Azure CLI** → Azure
+   PowerShell → Azure Developer CLI.
+2. **`InteractiveBrowserCredential`** (fallback) — if nothing above is available,
+   a browser sign-in opens. The token is cached (DPAPI on Windows), so the prompt
+   only appears the first time.
+
+The simplest path on a dev box is still:
 
 ```bash
 az login
 ```
 
-Then launch the app and click **Refresh** if it started before you signed in.
+…but with no CLI installed the app falls back to the browser sign-in automatically.
+Click **Refresh** if the app started before you signed in.
+
+If your tenant blocks the default developer client used by the browser sign-in,
+point it at your own Azure AD app registration (client ID + an
+`http://localhost` redirect URI) via environment variables — no code change:
+
+```bash
+setx VAULTVIEWER_TENANT_ID <tenant-guid>
+setx VAULTVIEWER_CLIENT_ID <app-client-id>
+```
 
 Your identity needs:
 - **Reader** (or higher) on subscriptions to list vaults.
@@ -50,7 +65,11 @@ The built exe lands in `bin/Debug/net8.0-windows/VaultViewer.exe`.
 | Path | Purpose |
 |------|---------|
 | `Models/` | `SubscriptionInfo`, `VaultInfo`, `SecretMatch` |
-| `Services/AzureService.cs` | ARM + Key Vault access, concurrent search |
+| `Services/IAzureService` + `AzureService.cs` | ARM + Key Vault access, concurrent search |
+| `Services/ICredentialFactory` + `DefaultCredentialFactory.cs` | Builds the credential chain (incl. browser fallback) |
 | `ViewModels/` | MVVM: `MainViewModel`, per-result and per-subscription VMs |
 | `MainWindow.xaml` | Two-pane UI |
 | `App.xaml` | Dark theme + styles |
+| `tests/VaultViewer.Tests/` | xUnit tests |
+
+Run the tests with `dotnet test`.

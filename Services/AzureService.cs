@@ -19,7 +19,7 @@ public readonly record struct ScanProgress(int VaultsScanned, int VaultsTotal, s
 /// Wraps Azure Resource Manager (control plane) and Key Vault (data plane) access.
 /// One credential is shared across every call so the user authenticates once.
 /// </summary>
-public sealed class AzureService
+public sealed class AzureService : IAzureService
 {
     // How many vaults we hit in parallel during a global search. Kept modest to
     // avoid throttling and to keep the UI responsive.
@@ -31,15 +31,9 @@ public sealed class AzureService
     // Cache one SecretClient per vault so repeated view/copy/search calls reuse it.
     private readonly ConcurrentDictionary<Uri, SecretClient> _secretClients = new();
 
-    public AzureService()
+    public AzureService(ICredentialFactory credentialFactory)
     {
-        // Full DefaultAzureCredential chain: env vars -> workload identity ->
-        // managed identity -> Visual Studio -> Azure CLI -> Azure PowerShell -> azd.
-        _credential = new DefaultAzureCredential(new DefaultAzureCredentialOptions
-        {
-            // Surface a clearer error faster if nothing in the chain works.
-            Retry = { MaxRetries = 2 }
-        });
+        _credential = credentialFactory.Create();
         _arm = new ArmClient(_credential);
     }
 

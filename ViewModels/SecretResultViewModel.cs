@@ -10,14 +10,14 @@ namespace VaultViewer.ViewModels;
 /// </summary>
 public sealed class SecretResultViewModel : ViewModelBase
 {
-    private readonly AzureService _azure;
+    private readonly IAzureService _azure;
     private readonly Action<string> _setStatus;
 
     private string? _revealedValue;
     private bool _isRevealed;
     private bool _isBusy;
 
-    public SecretResultViewModel(SecretMatch match, AzureService azure, Action<string> setStatus)
+    public SecretResultViewModel(SecretMatch match, IAzureService azure, Action<string> setStatus)
     {
         Match = match;
         _azure = azure;
