@@ -75,8 +75,9 @@
             <Setter Property="Padding" Value="2" />
         </Style>
 
-        <!-- Data template: a single selectable vault row (used in both list and tree) -->
-        <DataTemplate x:Key="VaultRowTemplate" DataType="{x:Type vm:SelectableVault}">
+        <!-- A selectable vault row. The filter argument controls which text is highlighted;
+             the list tab highlights against VaultFilter, the tree tab against SubscriptionFilter. -->
+        <DataTemplate x:Key="VaultListRowTemplate" DataType="{x:Type vm:SelectableVault}">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -84,12 +85,42 @@
                 </Grid.ColumnDefinitions>
                 <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,10,0" />
                 <StackPanel Grid.Column="1">
-                    <TextBlock Text="{Binding Vault.Name}" FontWeight="SemiBold" FontSize="13" TextTrimming="CharacterEllipsis" />
-                    <TextBlock FontSize="11" Foreground="{StaticResource MutedBrush}" TextTrimming="CharacterEllipsis">
-                        <Run Text="{Binding Vault.SubscriptionName, Mode=OneWay}" />
-                        <Run Text="  •  " />
-                        <Run Text="{Binding Vault.ResourceGroup, Mode=OneWay}" />
-                    </TextBlock>
+                    <TextBlock FontWeight="SemiBold" FontSize="13" TextTrimming="CharacterEllipsis"
+                               local:TextHighlighter.SourceText="{Binding Vault.Name}"
+                               local:TextHighlighter.Query="{Binding DataContext.VaultFilter, RelativeSource={RelativeSource AncestorType=Window}}" />
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock FontSize="11" Foreground="{StaticResource MutedBrush}"
+                                   local:TextHighlighter.SourceText="{Binding Vault.SubscriptionName}"
+                                   local:TextHighlighter.Query="{Binding DataContext.VaultFilter, RelativeSource={RelativeSource AncestorType=Window}}" />
+                        <TextBlock Text="  •  " FontSize="11" Foreground="{StaticResource MutedBrush}" />
+                        <TextBlock FontSize="11" Foreground="{StaticResource MutedBrush}"
+                                   local:TextHighlighter.SourceText="{Binding Vault.ResourceGroup}"
+                                   local:TextHighlighter.Query="{Binding DataContext.VaultFilter, RelativeSource={RelativeSource AncestorType=Window}}" />
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </DataTemplate>
+
+        <DataTemplate x:Key="VaultTreeRowTemplate" DataType="{x:Type vm:SelectableVault}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                <StackPanel Grid.Column="1">
+                    <TextBlock FontWeight="SemiBold" FontSize="13" TextTrimming="CharacterEllipsis"
+                               local:TextHighlighter.SourceText="{Binding Vault.Name}"
+                               local:TextHighlighter.Query="{Binding DataContext.SubscriptionFilter, RelativeSource={RelativeSource AncestorType=Window}}" />
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock FontSize="11" Foreground="{StaticResource MutedBrush}"
+                                   local:TextHighlighter.SourceText="{Binding Vault.SubscriptionName}"
+                                   local:TextHighlighter.Query="{Binding DataContext.SubscriptionFilter, RelativeSource={RelativeSource AncestorType=Window}}" />
+                        <TextBlock Text="  •  " FontSize="11" Foreground="{StaticResource MutedBrush}" />
+                        <TextBlock FontSize="11" Foreground="{StaticResource MutedBrush}"
+                                   local:TextHighlighter.SourceText="{Binding Vault.ResourceGroup}"
+                                   local:TextHighlighter.Query="{Binding DataContext.SubscriptionFilter, RelativeSource={RelativeSource AncestorType=Window}}" />
+                    </StackPanel>
                 </StackPanel>
             </Grid>
         </DataTemplate>
@@ -179,7 +210,7 @@
                             <ListBox Grid.Row="1" ItemsSource="{Binding VaultsView}"
                                      Background="Transparent" BorderThickness="0"
                                      ItemContainerStyle="{StaticResource VaultItemStyle}"
-                                     ItemTemplate="{StaticResource VaultRowTemplate}"
+                                     ItemTemplate="{StaticResource VaultListRowTemplate}"
                                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                      HorizontalContentAlignment="Stretch" />
                         </Grid>
@@ -208,14 +239,16 @@
                                 <TreeView.ItemTemplate>
                                     <HierarchicalDataTemplate DataType="{x:Type vm:SubscriptionGroupViewModel}"
                                                               ItemsSource="{Binding VaultsView}"
-                                                              ItemTemplate="{StaticResource VaultRowTemplate}">
+                                                              ItemTemplate="{StaticResource VaultTreeRowTemplate}">
                                         <StackPanel Orientation="Horizontal">
                                             <CheckBox IsThreeState="True" IsChecked="{Binding IsAllSelected, Mode=OneWay}"
                                                       Command="{Binding ToggleAllCommand}"
                                                       VerticalAlignment="Center" Margin="0,0,8,0"
                                                       ToolTip="Select / deselect all vaults in this subscription" />
                                             <TextBlock Text="📁" FontSize="13" Margin="0,0,6,0" />
-                                            <TextBlock Text="{Binding SubscriptionName}" FontWeight="SemiBold" FontSize="13" />
+                                            <TextBlock FontWeight="SemiBold" FontSize="13"
+                                                       local:TextHighlighter.SourceText="{Binding SubscriptionName}"
+                                                       local:TextHighlighter.Query="{Binding DataContext.SubscriptionFilter, RelativeSource={RelativeSource AncestorType=Window}}" />
                                             <TextBlock FontSize="11" Foreground="{StaticResource MutedBrush}" Margin="6,0,0,0"
                                                        VerticalAlignment="Center">
                                                 <Run Text="(" /><Run Text="{Binding VaultCount, Mode=OneWay}" /><Run Text=")" />
