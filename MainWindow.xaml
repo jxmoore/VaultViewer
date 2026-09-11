@@ -164,41 +164,35 @@
             <!-- ===== Left: action bar ===== -->
             <Border Grid.Column="0" Background="{StaticResource PanelBrush}" CornerRadius="10"
                     BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
-                <DockPanel>
-
-                    <!-- Shared selection toolbar (applies across both tabs) -->
-                    <Grid DockPanel.Dock="Top" Margin="12,12,12,0">
-                        <StackPanel Orientation="Horizontal">
-                            <Button Content="Select all" Command="{Binding SelectAllCommand}"
-                                    Padding="10,4" FontSize="12" />
-                            <Button Content="Clear" Command="{Binding SelectNoneCommand}"
-                                    Padding="10,4" FontSize="12" Margin="6,0,0,0" />
-                        </StackPanel>
-                        <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"
-                                   Foreground="{StaticResource MutedBrush}">
-                            <Run Text="{Binding SelectedVaultCount, Mode=OneWay}" />
-                            <Run Text=" of " />
-                            <Run Text="{Binding VaultCount, Mode=OneWay}" />
-                            <Run Text=" selected" />
-                        </TextBlock>
-                    </Grid>
-
-                    <TabControl Background="Transparent" BorderThickness="0" Padding="12">
-                        <TabControl.Resources>
-                            <Style TargetType="TabPanel">
-                                <Setter Property="Margin" Value="0,0,0,10" />
-                            </Style>
-                        </TabControl.Resources>
+                <TabControl Background="Transparent" BorderThickness="0" Padding="12">
+                    <TabControl.Resources>
+                        <Style TargetType="TabPanel">
+                            <Setter Property="Margin" Value="0,0,0,10" />
+                        </Style>
+                    </TabControl.Resources>
 
                     <!-- Vaults tab -->
                     <TabItem Header="Vaults">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
                                 <RowDefinition Height="*" />
                             </Grid.RowDefinitions>
 
-                            <Grid Grid.Row="0" Margin="0,0,0,8">
+                            <Grid Grid.Row="0" Margin="2,0,2,8">
+                                <TextBlock VerticalAlignment="Center" FontSize="12" Foreground="{StaticResource MutedBrush}">
+                                    <Run Text="{Binding SelectedVaultCount, Mode=OneWay}" />
+                                    <Run Text=" of " />
+                                    <Run Text="{Binding VaultCount, Mode=OneWay}" />
+                                    <Run Text=" selected" />
+                                </TextBlock>
+                                <Button HorizontalAlignment="Right" VerticalAlignment="Center"
+                                        Style="{StaticResource LinkButton}"
+                                        Content="{Binding SelectionActionLabel}" Command="{Binding ToggleSelectionCommand}" />
+                            </Grid>
+
+                            <Grid Grid.Row="1" Margin="0,0,0,8">
                                 <TextBox Text="{Binding VaultFilter, UpdateSourceTrigger=PropertyChanged}"
                                          Height="36" VerticalContentAlignment="Center" Padding="10,0" />
                                 <TextBlock Text="Filter vaults by name, subscription or RG…"
@@ -207,7 +201,7 @@
                                            Visibility="{Binding VaultFilter, Converter={StaticResource EmptyToVis}}" />
                             </Grid>
 
-                            <ListBox Grid.Row="1" ItemsSource="{Binding VaultsView}"
+                            <ListBox Grid.Row="2" ItemsSource="{Binding VaultsView}"
                                      Background="Transparent" BorderThickness="0"
                                      ItemContainerStyle="{StaticResource VaultItemStyle}"
                                      ItemTemplate="{StaticResource VaultListRowTemplate}"
@@ -221,10 +215,23 @@
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
                                 <RowDefinition Height="*" />
                             </Grid.RowDefinitions>
 
-                            <Grid Grid.Row="0" Margin="0,0,0,8">
+                            <Grid Grid.Row="0" Margin="2,0,2,8">
+                                <TextBlock VerticalAlignment="Center" FontSize="12" Foreground="{StaticResource MutedBrush}">
+                                    <Run Text="{Binding SelectedVaultCount, Mode=OneWay}" />
+                                    <Run Text=" of " />
+                                    <Run Text="{Binding VaultCount, Mode=OneWay}" />
+                                    <Run Text=" selected" />
+                                </TextBlock>
+                                <Button HorizontalAlignment="Right" VerticalAlignment="Center"
+                                        Style="{StaticResource LinkButton}"
+                                        Content="{Binding SelectionActionLabel}" Command="{Binding ToggleSelectionCommand}" />
+                            </Grid>
+
+                            <Grid Grid.Row="1" Margin="0,0,0,8">
                                 <TextBox Text="{Binding SubscriptionFilter, UpdateSourceTrigger=PropertyChanged}"
                                          Height="36" VerticalContentAlignment="Center" Padding="10,0" />
                                 <TextBlock Text="Filter subscriptions or vaults…"
@@ -233,7 +240,7 @@
                                            Visibility="{Binding SubscriptionFilter, Converter={StaticResource EmptyToVis}}" />
                             </Grid>
 
-                            <TreeView Grid.Row="1" ItemsSource="{Binding SubscriptionsView}"
+                            <TreeView Grid.Row="2" ItemsSource="{Binding SubscriptionsView}"
                                       Background="Transparent" BorderThickness="0"
                                       ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                                 <TreeView.ItemTemplate>
@@ -259,8 +266,7 @@
                             </TreeView>
                         </Grid>
                     </TabItem>
-                    </TabControl>
-                </DockPanel>
+                </TabControl>
             </Border>
 
             <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Stretch"

@@ -36,8 +36,7 @@ public sealed class MainViewModel : ViewModelBase
         RefreshCommand = new AsyncRelayCommand(_ => LoadAsync(), _ => !IsLoading);
         SearchCommand = new AsyncRelayCommand(_ => SearchAsync(), _ => !IsSearching && HasLoaded);
         CancelSearchCommand = new RelayCommand(_ => _searchCts?.Cancel(), _ => IsSearching);
-        SelectAllCommand = new RelayCommand(_ => SetAllSelected(true), _ => Vaults.Count > 0);
-        SelectNoneCommand = new RelayCommand(_ => SetAllSelected(false), _ => Vaults.Count > 0);
+        ToggleSelectionCommand = new RelayCommand(_ => SetAllSelected(SelectedVaultCount == 0), _ => Vaults.Count > 0);
     }
 
     // ---- Left pane: flat vault list (shared selection instances) ----
@@ -54,8 +53,7 @@ public sealed class MainViewModel : ViewModelBase
     public AsyncRelayCommand RefreshCommand { get; }
     public AsyncRelayCommand SearchCommand { get; }
     public RelayCommand CancelSearchCommand { get; }
-    public RelayCommand SelectAllCommand { get; }
-    public RelayCommand SelectNoneCommand { get; }
+    public RelayCommand ToggleSelectionCommand { get; }
 
     public string VaultFilter
     {
@@ -110,6 +108,9 @@ public sealed class MainViewModel : ViewModelBase
     public int VaultCount => Vaults.Count;
     public int SubscriptionCount => Subscriptions.Count;
     public int SelectedVaultCount => Vaults.Count(v => v.IsSelected);
+
+    /// <summary>Label for the selection link: "Select all" when nothing is selected, else "Clear selection".</summary>
+    public string SelectionActionLabel => SelectedVaultCount == 0 ? "Select all" : "Clear selection";
 
     public int ScanProgress
     {
@@ -182,6 +183,7 @@ public sealed class MainViewModel : ViewModelBase
             OnPropertyChanged(nameof(VaultCount));
             OnPropertyChanged(nameof(SubscriptionCount));
             OnPropertyChanged(nameof(SelectedVaultCount));
+            OnPropertyChanged(nameof(SelectionActionLabel));
             HasLoaded = true;
             StatusText = $"Found {Vaults.Count} vault(s) across {Subscriptions.Count} subscription(s).";
         }
@@ -280,6 +282,9 @@ public sealed class MainViewModel : ViewModelBase
     private void OnVaultSelectionChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(SelectableVault.IsSelected))
+        {
             OnPropertyChanged(nameof(SelectedVaultCount));
+            OnPropertyChanged(nameof(SelectionActionLabel));
+        }
     }
 }
