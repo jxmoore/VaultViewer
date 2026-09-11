@@ -6,7 +6,7 @@ namespace VaultViewer.Services;
 public interface IAzureService
 {
     /// <summary>Enumerate every accessible subscription and its Key Vaults.</summary>
-    Task<IReadOnlyList<SubscriptionInfo>> DiscoverAsync(IProgress<string>? progress, CancellationToken ct);
+    Task<IReadOnlyList<SubscriptionInfo>> DiscoverAsync(IProgress<DiscoveryProgress>? progress, CancellationToken ct);
 
     /// <summary>Scan the given vaults for secrets whose name contains <paramref name="query"/>.</summary>
     Task SearchSecretsAsync(

@@ -16,6 +16,12 @@ namespace VaultViewer.Services;
 public readonly record struct ScanProgress(int VaultsScanned, int VaultsTotal, string CurrentVault);
 
 /// <summary>
+/// Progress payload for subscription/vault discovery. <see cref="Total"/> is 0 until the
+/// subscription list has been enumerated (the "listing subscriptions" phase).
+/// </summary>
+public readonly record struct DiscoveryProgress(int Completed, int Total, string Message);
+
+/// <summary>
 /// Wraps Azure Resource Manager (control plane) and Key Vault (data plane) access.
 /// One credential is shared across every call so the user authenticates once.
 /// </summary>
@@ -42,18 +48,33 @@ public sealed class AzureService : IAzureService
     /// Vault listing runs per-subscription; failures on one subscription don't abort the rest.
     /// </summary>
     public async Task<IReadOnlyList<SubscriptionInfo>> DiscoverAsync(
-        IProgress<string>? progress,
+        IProgress<DiscoveryProgress>? progress,
         CancellationToken ct)
     {
-        var result = new List<SubscriptionInfo>();
+        // Phase 1: enumerate the subscription list so we know the total up front
+        // (the count isn't known until this completes).
+        progress?.Report(new DiscoveryProgress(0, 0, "Listing subscriptions…"));
 
+        var subscriptions = new List<SubscriptionResource>();
         await foreach (SubscriptionResource sub in _arm.GetSubscriptions().GetAllAsync(ct))
         {
             ct.ThrowIfCancellationRequested();
+            subscriptions.Add(sub);
+        }
+
+        // Phase 2: walk each subscription's vaults, reporting "x of N".
+        var total = subscriptions.Count;
+        var result = new List<SubscriptionInfo>(total);
+        var index = 0;
+
+        foreach (SubscriptionResource sub in subscriptions)
+        {
+            ct.ThrowIfCancellationRequested();
+            index++;
 
             var subId = sub.Data.SubscriptionId ?? sub.Data.Id?.SubscriptionId ?? "unknown";
             var subName = string.IsNullOrWhiteSpace(sub.Data.DisplayName) ? subId : sub.Data.DisplayName;
-            progress?.Report($"Scanning subscription \"{subName}\"…");
+            progress?.Report(new DiscoveryProgress(index, total, $"Scanning subscription \"{subName}\" ({index}/{total})…"));
 
             var info = new SubscriptionInfo { SubscriptionId = subId, DisplayName = subName };
 
@@ -81,7 +102,7 @@ public sealed class AzureService : IAzureService
             catch (Exception ex) when (ex is RequestFailedException or AuthenticationFailedException)
             {
                 // No access to list vaults in this subscription — record it and move on.
-                progress?.Report($"Skipped \"{subName}\": {ex.Message}");
+                progress?.Report(new DiscoveryProgress(index, total, $"Skipped \"{subName}\": {ex.Message}"));
             }
 
             result.Add(info);

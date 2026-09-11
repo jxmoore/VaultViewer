@@ -10,6 +10,7 @@
             <local:StringEmptyToVisibilityConverter x:Key="EmptyToVis" />
             <local:InverseBooleanConverter x:Key="InverseBool" />
             <local:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVis" />
+            <local:PositiveIntToVisibilityConverter x:Key="PositiveIntToVis" />
             <BooleanToVisibilityConverter x:Key="BoolToVis" />
 
             <!-- Palette (dark, slate/indigo) -->

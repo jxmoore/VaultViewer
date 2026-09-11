@@ -381,9 +381,46 @@
         <Border Grid.Row="2" Margin="0,12,0,0" Background="{StaticResource PanelBrush}" CornerRadius="8"
                 BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="12,8">
             <Grid>
-                <TextBlock Text="{Binding StatusText}" Foreground="{StaticResource MutedBrush}" FontSize="12"
-                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                <TextBlock HorizontalAlignment="Right" FontSize="12" Foreground="{StaticResource MutedBrush}"
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0" Text="{Binding StatusText}" Foreground="{StaticResource MutedBrush}"
+                           FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+
+                <!-- Discovery progress -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0"
+                            Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}">
+                    <TextBlock FontSize="12" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center"
+                               Margin="0,0,10,0"
+                               Visibility="{Binding LoadTotal, Converter={StaticResource PositiveIntToVis}}">
+                        <Run Text="Subscription" />
+                        <Run Text="{Binding LoadProgress, Mode=OneWay}" />
+                        <Run Text="of" />
+                        <Run Text="{Binding LoadTotal, Mode=OneWay}" />
+                    </TextBlock>
+                    <ProgressBar Width="170" Height="6" Minimum="0"
+                                 Maximum="{Binding LoadTotal, Mode=OneWay}" Value="{Binding LoadProgress, Mode=OneWay}"
+                                 Foreground="{StaticResource AccentBrush}" Background="{StaticResource PanelAltBrush}"
+                                 BorderThickness="0" VerticalAlignment="Center">
+                        <ProgressBar.Style>
+                            <Style TargetType="ProgressBar">
+                                <Setter Property="IsIndeterminate" Value="False" />
+                                <Style.Triggers>
+                                    <!-- Before the subscription count is known, show a moving indeterminate bar. -->
+                                    <DataTrigger Binding="{Binding LoadTotal}" Value="0">
+                                        <Setter Property="IsIndeterminate" Value="True" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ProgressBar.Style>
+                    </ProgressBar>
+                </StackPanel>
+
+                <!-- Global-search progress -->
+                <TextBlock Grid.Column="1" HorizontalAlignment="Right" FontSize="12" Foreground="{StaticResource MutedBrush}"
+                           VerticalAlignment="Center"
                            Visibility="{Binding IsSearching, Converter={StaticResource BoolToVis}}">
                     <Run Text="Scanned" />
                     <Run Text="{Binding ScanProgress, Mode=OneWay}" />

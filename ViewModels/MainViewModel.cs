@@ -21,6 +21,8 @@ public sealed class MainViewModel : ViewModelBase
     private bool _hasLoaded;
     private int _scanProgress;
     private int _scanTotal;
+    private int _loadProgress;
+    private int _loadTotal;
     private CancellationTokenSource? _searchCts;
 
     public MainViewModel()
@@ -116,6 +118,20 @@ public sealed class MainViewModel : ViewModelBase
         private set => SetField(ref _scanTotal, value);
     }
 
+    /// <summary>Subscriptions discovered so far during the initial load.</summary>
+    public int LoadProgress
+    {
+        get => _loadProgress;
+        private set => SetField(ref _loadProgress, value);
+    }
+
+    /// <summary>Total subscriptions to discover (0 while the list is still being enumerated).</summary>
+    public int LoadTotal
+    {
+        get => _loadTotal;
+        private set => SetField(ref _loadTotal, value);
+    }
+
     /// <summary>Discover subscriptions and vaults. Runs on startup and on Refresh.</summary>
     public async Task LoadAsync()
     {
@@ -123,13 +139,20 @@ public sealed class MainViewModel : ViewModelBase
 
         IsLoading = true;
         HasLoaded = false;
+        LoadProgress = 0;
+        LoadTotal = 0;
         StatusText = "Signing in and discovering vaults…";
         Vaults.Clear();
         Subscriptions.Clear();
 
         try
         {
-            var progress = new Progress<string>(msg => StatusText = msg);
+            var progress = new Progress<DiscoveryProgress>(p =>
+            {
+                LoadProgress = p.Completed;
+                LoadTotal = p.Total;
+                StatusText = p.Message;
+            });
             var subs = await Task.Run(() => _azure.DiscoverAsync(progress, CancellationToken.None));
 
             var allVaults = subs.SelectMany(s => s.Vaults)
