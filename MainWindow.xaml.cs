@@ -13,4 +13,9 @@ public partial class MainWindow : Window
         DataContext = _vm;
         Loaded += async (_, _) => await _vm.LoadAsync();
     }
+
+    private void TextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+    {
+
+    }
 }

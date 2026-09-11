@@ -90,10 +90,21 @@ public sealed class MainViewModel : ViewModelBase
     public bool IsLoading
     {
         get => _isLoading;
-        private set { if (SetField(ref _isLoading, value)) OnPropertyChanged(nameof(IsReady)); }
+        private set
+        {
+            if (SetField(ref _isLoading, value))
+            {
+                OnPropertyChanged(nameof(IsReady));
+                OnPropertyChanged(nameof(SelectionSummary));
+            }
+        }
     }
 
     public bool IsReady => !IsLoading;
+
+    /// <summary>The left-pane header text: "Loading…" during discovery, otherwise the selected count.</summary>
+    public string SelectionSummary =>
+        IsLoading ? "Loading…" : $"{SelectedVaultCount} of {VaultCount} selected";
 
     public bool IsSearching
     {
@@ -205,6 +216,7 @@ public sealed class MainViewModel : ViewModelBase
             OnPropertyChanged(nameof(SubscriptionCount));
             OnPropertyChanged(nameof(SelectedVaultCount));
             OnPropertyChanged(nameof(SelectionActionLabel));
+            OnPropertyChanged(nameof(SelectionSummary));
             HasLoaded = true;
             StatusText = $"Found {Vaults.Count} vault(s) across {Subscriptions.Count} subscription(s).";
         }
@@ -311,6 +323,7 @@ public sealed class MainViewModel : ViewModelBase
         {
             OnPropertyChanged(nameof(SelectedVaultCount));
             OnPropertyChanged(nameof(SelectionActionLabel));
+            OnPropertyChanged(nameof(SelectionSummary));
         }
     }
 }
