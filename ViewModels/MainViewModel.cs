@@ -190,7 +190,7 @@ public sealed class MainViewModel : ViewModelBase
                 Interlocked.Increment(ref found);
                 // Marshal back to the UI thread to touch the ObservableCollection.
                 _dispatcher.BeginInvoke(() =>
-                    Results.Add(new SecretResultViewModel(match, _azure, m => StatusText = m)));
+                    Results.Add(new SecretResultViewModel(match, _azure, m => StatusText = m, query)));
             }
 
             await Task.Run(() => _azure.SearchSecretsAsync(query, vaultsSnapshot, progress, OnMatch, ct), ct);

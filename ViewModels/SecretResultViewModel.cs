@@ -17,16 +17,20 @@ public sealed class SecretResultViewModel : ViewModelBase
     private bool _isRevealed;
     private bool _isBusy;
 
-    public SecretResultViewModel(SecretMatch match, IAzureService azure, Action<string> setStatus)
+    public SecretResultViewModel(SecretMatch match, IAzureService azure, Action<string> setStatus, string query)
     {
         Match = match;
         _azure = azure;
         _setStatus = setStatus;
+        Query = query;
         ViewCommand = new AsyncRelayCommand(_ => ToggleRevealAsync());
         CopyCommand = new AsyncRelayCommand(_ => CopyAsync());
     }
 
     public SecretMatch Match { get; }
+
+    /// <summary>The search term that produced this match, used to highlight the secret name.</summary>
+    public string Query { get; }
 
     public string SecretName => Match.SecretName;
     public string VaultName => Match.VaultName;
