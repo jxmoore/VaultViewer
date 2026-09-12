@@ -121,6 +121,11 @@
                             <Trigger Property="IsChecked" Value="True">
                                 <Setter TargetName="check" Property="Visibility" Value="Visible" />
                             </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="bd" Property="Opacity" Value="0.45" />
+                                <Setter TargetName="bd" Property="Background" Value="Transparent" />
+                                <Setter Property="Cursor" Value="Arrow" />
+                            </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
@@ -438,19 +443,20 @@
                                     <HierarchicalDataTemplate DataType="{x:Type vm:SubscriptionGroupViewModel}"
                                                               ItemsSource="{Binding VaultsView}"
                                                               ItemTemplate="{StaticResource VaultTreeRowTemplate}">
-                                        <StackPanel Orientation="Horizontal">
-                                            <CheckBox IsChecked="{Binding IsAllSelected, Mode=OneWay}"
+                                        <ToggleButton Style="{StaticResource VaultRowToggle}"
+                                                      IsChecked="{Binding IsAllSelected, Mode=OneWay}"
                                                       Command="{Binding ToggleAllCommand}"
-                                                      VerticalAlignment="Center" Margin="0,0,8,0"
-                                                      ToolTip="Select / deselect all vaults in this subscription" />
-                                            <TextBlock FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center"
-                                                       local:TextHighlighter.SourceText="{Binding SubscriptionName}"
-                                                       local:TextHighlighter.Query="{Binding DataContext.SubscriptionFilter, RelativeSource={RelativeSource AncestorType=Window}}" />
-                                            <TextBlock FontSize="11" Foreground="{DynamicResource MutedBrush}" Margin="6,0,0,0"
-                                                       VerticalAlignment="Center">
-                                                <Run Text="(" /><Run Text="{Binding VaultCount, Mode=OneWay}" /><Run Text=")" />
-                                            </TextBlock>
-                                        </StackPanel>
+                                                      ToolTip="Select / deselect all vaults in this subscription">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center"
+                                                           local:TextHighlighter.SourceText="{Binding SubscriptionName}"
+                                                           local:TextHighlighter.Query="{Binding DataContext.SubscriptionFilter, RelativeSource={RelativeSource AncestorType=Window}}" />
+                                                <TextBlock FontSize="11" Foreground="{DynamicResource MutedBrush}" Margin="6,0,0,0"
+                                                           VerticalAlignment="Center">
+                                                    <Run Text="(" /><Run Text="{Binding VaultCount, Mode=OneWay}" /><Run Text=")" />
+                                                </TextBlock>
+                                            </StackPanel>
+                                        </ToggleButton>
                                     </HierarchicalDataTemplate>
                                 </TreeView.ItemTemplate>
                             </TreeView>

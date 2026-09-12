@@ -57,6 +57,24 @@ public class SelectionTests
     }
 
     [Fact]
+    public void Empty_group_is_not_selected_and_cannot_toggle()
+    {
+        var group = MakeGroup();
+
+        Assert.False(group.HasVaults);
+        Assert.False(group.IsAllSelected);
+        Assert.False(group.ToggleAllCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public void Nonempty_group_can_toggle()
+    {
+        var group = MakeGroup(MakeVault("a"));
+
+        Assert.True(group.ToggleAllCommand.CanExecute(null));
+    }
+
+    [Fact]
     public void ToggleAll_clears_when_all_selected()
     {
         var a = MakeVault("a");

@@ -251,7 +251,10 @@ public sealed class MainViewModel : ViewModelBase
                 Vaults.Add(sv);
             }
 
-            foreach (var s in subs.OrderBy(s => s.DisplayName, StringComparer.OrdinalIgnoreCase))
+            // Subscriptions with vaults first (alphabetical), empty ones sorted to the bottom.
+            var orderedSubs = subs.OrderBy(s => s.Vaults.Count == 0 ? 1 : 0)
+                                  .ThenBy(s => s.DisplayName, StringComparer.OrdinalIgnoreCase);
+            foreach (var s in orderedSubs)
             {
                 var groupVaults = s.Vaults.Select(v => selectableByVault[v]).ToList();
                 Subscriptions.Add(new SubscriptionGroupViewModel(s, groupVaults));
