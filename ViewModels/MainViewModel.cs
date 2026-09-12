@@ -10,7 +10,10 @@ namespace VaultViewer.ViewModels;
 public sealed class MainViewModel : ViewModelBase
 {
     private readonly IAzureService _azure = new AzureService(new DefaultCredentialFactory());
+    private readonly IThemeService _theme = new ThemeService();
     private readonly Dispatcher _dispatcher = Dispatcher.CurrentDispatcher;
+
+    private AppTheme _currentTheme = AppTheme.Dark;
 
     private string _vaultFilter = string.Empty;
     private string _subscriptionFilter = string.Empty;
@@ -39,6 +42,24 @@ public sealed class MainViewModel : ViewModelBase
         SearchCommand = new AsyncRelayCommand(_ => SearchAsync(), _ => !IsSearching && HasLoaded);
         CancelSearchCommand = new RelayCommand(_ => _searchCts?.Cancel(), _ => IsSearching);
         ToggleSelectionCommand = new RelayCommand(_ => SetAllSelected(SelectedVaultCount == 0), _ => Vaults.Count > 0);
+        ToggleThemeCommand = new RelayCommand(_ => ToggleTheme());
+    }
+
+    // ---- Theme toggle ----
+    public RelayCommand ToggleThemeCommand { get; }
+
+    /// <summary>Label/icon for the toggle — it advertises the theme you'd switch TO.</summary>
+    public string ThemeToggleContent => _currentTheme == AppTheme.Dark ? "☀  Light" : "🌙  Dark";
+
+    public string ThemeToggleTooltip =>
+        _currentTheme == AppTheme.Dark ? "Switch to light mode" : "Switch to dark mode";
+
+    private void ToggleTheme()
+    {
+        _currentTheme = _currentTheme == AppTheme.Dark ? AppTheme.Light : AppTheme.Dark;
+        _theme.Apply(_currentTheme);
+        OnPropertyChanged(nameof(ThemeToggleContent));
+        OnPropertyChanged(nameof(ThemeToggleTooltip));
     }
 
     // ---- Left pane: flat vault list (shared selection instances) ----
