@@ -1,4 +1,3 @@
-using System.Windows;
 using VaultViewer.Models;
 using VaultViewer.Services;
 
@@ -11,16 +10,19 @@ namespace VaultViewer.ViewModels;
 public sealed class SecretResultViewModel : ViewModelBase
 {
     private readonly IAzureService _azure;
+    private readonly IClipboardService _clipboard;
     private readonly Action<string> _setStatus;
 
     private string? _revealedValue;
     private bool _isRevealed;
     private bool _isBusy;
 
-    public SecretResultViewModel(SecretMatch match, IAzureService azure, Action<string> setStatus, string query)
+    public SecretResultViewModel(SecretMatch match, IAzureService azure, IClipboardService clipboard,
+        Action<string> setStatus, string query)
     {
         Match = match;
         _azure = azure;
+        _clipboard = clipboard;
         _setStatus = setStatus;
         Query = query;
         ViewCommand = new AsyncRelayCommand(_ => ToggleRevealAsync());
@@ -90,7 +92,7 @@ public sealed class SecretResultViewModel : ViewModelBase
         {
             IsBusy = true;
             _revealedValue ??= await _azure.GetSecretValueAsync(Match.VaultUri, Match.SecretName, CancellationToken.None);
-            Clipboard.SetText(_revealedValue);
+            _clipboard.SetText(_revealedValue);
             _setStatus($"Copied \"{Match.SecretName}\" to clipboard.");
         }
         catch (Exception ex)

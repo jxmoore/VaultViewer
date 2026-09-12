@@ -9,8 +9,14 @@ namespace VaultViewer.ViewModels;
 
 public sealed class MainViewModel : ViewModelBase
 {
-    private readonly IAzureService _azure = new AzureService(new DefaultCredentialFactory());
-    private readonly Dispatcher _dispatcher = Dispatcher.CurrentDispatcher;
+    private readonly IAzureService _azure;
+    private readonly IThemeService _theme;
+    private readonly IClipboardService _clipboard;
+
+    // How results marshal back onto the UI thread. Injectable so tests can run synchronously.
+    private readonly Action<Action> _dispatch;
+
+    private AppTheme _currentTheme = AppTheme.Dark;
 
     private string _vaultFilter = string.Empty;
     private string _subscriptionFilter = string.Empty;
@@ -23,10 +29,29 @@ public sealed class MainViewModel : ViewModelBase
     private int _scanTotal;
     private int _loadProgress;
     private int _loadTotal;
+    private bool _hasSearched;
+    private string _lastSearchQuery = string.Empty;
     private CancellationTokenSource? _searchCts;
 
+    /// <summary>Production constructor used by the view — real Azure + theme + clipboard services.</summary>
     public MainViewModel()
+        : this(new AzureService(new DefaultCredentialFactory()), new ThemeService(), new WpfClipboardService())
     {
+    }
+
+    /// <summary>
+    /// Testable constructor. <paramref name="dispatch"/> defaults to marshalling onto the
+    /// current Dispatcher; tests pass a synchronous version.
+    /// </summary>
+    public MainViewModel(IAzureService azure, IThemeService theme, IClipboardService clipboard,
+        Action<Action>? dispatch = null)
+    {
+        _azure = azure;
+        _theme = theme;
+        _clipboard = clipboard;
+        var dispatcher = Dispatcher.CurrentDispatcher;
+        _dispatch = dispatch ?? (action => dispatcher.BeginInvoke(action));
+
         VaultsView = CollectionViewSource.GetDefaultView(Vaults);
         VaultsView.Filter = FilterVault;
 
@@ -36,8 +61,25 @@ public sealed class MainViewModel : ViewModelBase
         RefreshCommand = new AsyncRelayCommand(_ => LoadAsync(), _ => !IsLoading);
         SearchCommand = new AsyncRelayCommand(_ => SearchAsync(), _ => !IsSearching && HasLoaded);
         CancelSearchCommand = new RelayCommand(_ => _searchCts?.Cancel(), _ => IsSearching);
-        SelectAllCommand = new RelayCommand(_ => SetAllSelected(true), _ => Vaults.Count > 0);
-        SelectNoneCommand = new RelayCommand(_ => SetAllSelected(false), _ => Vaults.Count > 0);
+        ToggleSelectionCommand = new RelayCommand(_ => SetAllSelected(SelectedVaultCount == 0), _ => Vaults.Count > 0);
+        ToggleThemeCommand = new RelayCommand(_ => ToggleTheme());
+    }
+
+    // ---- Theme toggle ----
+    public RelayCommand ToggleThemeCommand { get; }
+
+    /// <summary>Label/icon for the toggle — it advertises the theme you'd switch TO.</summary>
+    public string ThemeToggleContent => _currentTheme == AppTheme.Dark ? "☀  Light" : "🌙  Dark";
+
+    public string ThemeToggleTooltip =>
+        _currentTheme == AppTheme.Dark ? "Switch to light mode" : "Switch to dark mode";
+
+    private void ToggleTheme()
+    {
+        _currentTheme = _currentTheme == AppTheme.Dark ? AppTheme.Light : AppTheme.Dark;
+        _theme.Apply(_currentTheme);
+        OnPropertyChanged(nameof(ThemeToggleContent));
+        OnPropertyChanged(nameof(ThemeToggleTooltip));
     }
 
     // ---- Left pane: flat vault list (shared selection instances) ----
@@ -54,8 +96,7 @@ public sealed class MainViewModel : ViewModelBase
     public AsyncRelayCommand RefreshCommand { get; }
     public AsyncRelayCommand SearchCommand { get; }
     public RelayCommand CancelSearchCommand { get; }
-    public RelayCommand SelectAllCommand { get; }
-    public RelayCommand SelectNoneCommand { get; }
+    public RelayCommand ToggleSelectionCommand { get; }
 
     public string VaultFilter
     {
@@ -90,15 +131,45 @@ public sealed class MainViewModel : ViewModelBase
     public bool IsLoading
     {
         get => _isLoading;
-        private set { if (SetField(ref _isLoading, value)) OnPropertyChanged(nameof(IsReady)); }
+        private set
+        {
+            if (SetField(ref _isLoading, value))
+            {
+                OnPropertyChanged(nameof(IsReady));
+                OnPropertyChanged(nameof(SelectionSummary));
+            }
+        }
     }
 
     public bool IsReady => !IsLoading;
 
+    /// <summary>The left-pane header text: "Loading…" during discovery, otherwise the selected count.</summary>
+    public string SelectionSummary =>
+        IsLoading ? "Loading…" : $"{SelectedVaultCount} of {VaultCount} selected";
+
     public bool IsSearching
     {
         get => _isSearching;
-        private set => SetField(ref _isSearching, value);
+        private set { if (SetField(ref _isSearching, value)) RaiseResultStates(); }
+    }
+
+    /// <summary>The query the current results belong to, shown in the empty-state message.</summary>
+    public string LastSearchQuery
+    {
+        get => _lastSearchQuery;
+        private set => SetField(ref _lastSearchQuery, value);
+    }
+
+    /// <summary>True while a search is running and nothing has come back yet — show the skeleton.</summary>
+    public bool ShowSearchSkeleton => SearchViewState.ShowSkeleton(IsSearching, Results.Count);
+
+    /// <summary>True when a finished search found nothing — show the empty-state message.</summary>
+    public bool ShowNoResults => SearchViewState.ShowNoResults(_hasSearched, IsSearching, Results.Count);
+
+    private void RaiseResultStates()
+    {
+        OnPropertyChanged(nameof(ShowSearchSkeleton));
+        OnPropertyChanged(nameof(ShowNoResults));
     }
 
     public bool HasLoaded
@@ -110,6 +181,9 @@ public sealed class MainViewModel : ViewModelBase
     public int VaultCount => Vaults.Count;
     public int SubscriptionCount => Subscriptions.Count;
     public int SelectedVaultCount => Vaults.Count(v => v.IsSelected);
+
+    /// <summary>Label for the selection link: "Select all" when nothing is selected, else "Clear selection".</summary>
+    public string SelectionActionLabel => SelectedVaultCount == 0 ? "Select all" : "Clear selection";
 
     public int ScanProgress
     {
@@ -182,6 +256,8 @@ public sealed class MainViewModel : ViewModelBase
             OnPropertyChanged(nameof(VaultCount));
             OnPropertyChanged(nameof(SubscriptionCount));
             OnPropertyChanged(nameof(SelectedVaultCount));
+            OnPropertyChanged(nameof(SelectionActionLabel));
+            OnPropertyChanged(nameof(SelectionSummary));
             HasLoaded = true;
             StatusText = $"Found {Vaults.Count} vault(s) across {Subscriptions.Count} subscription(s).";
         }
@@ -195,7 +271,7 @@ public sealed class MainViewModel : ViewModelBase
         }
     }
 
-    private async Task SearchAsync()
+    public async Task SearchAsync()
     {
         var query = SearchQuery?.Trim() ?? string.Empty;
         if (query.Length == 0)
@@ -216,6 +292,8 @@ public sealed class MainViewModel : ViewModelBase
         var ct = _searchCts.Token;
 
         Results.Clear();
+        LastSearchQuery = query;
+        _hasSearched = true;
         IsSearching = true;
         ScanProgress = 0;
         ScanTotal = vaultsSnapshot.Count;
@@ -235,8 +313,11 @@ public sealed class MainViewModel : ViewModelBase
             {
                 Interlocked.Increment(ref found);
                 // Marshal back to the UI thread to touch the ObservableCollection.
-                _dispatcher.BeginInvoke(() =>
-                    Results.Add(new SecretResultViewModel(match, _azure, m => StatusText = m, query)));
+                _dispatch(() =>
+                {
+                    Results.Add(new SecretResultViewModel(match, _azure, _clipboard, m => StatusText = m, query));
+                    RaiseResultStates(); // first result hides the skeleton
+                });
             }
 
             await Task.Run(() => _azure.SearchSecretsAsync(query, vaultsSnapshot, progress, OnMatch, ct), ct);
@@ -280,6 +361,10 @@ public sealed class MainViewModel : ViewModelBase
     private void OnVaultSelectionChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(SelectableVault.IsSelected))
+        {
             OnPropertyChanged(nameof(SelectedVaultCount));
+            OnPropertyChanged(nameof(SelectionActionLabel));
+            OnPropertyChanged(nameof(SelectionSummary));
+        }
     }
 }

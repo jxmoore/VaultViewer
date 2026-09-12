@@ -6,7 +6,7 @@
         xmlns:models="clr-namespace:VaultViewer.Models"
         Title="VaultViewer" Height="760" Width="1200"
         MinHeight="520" MinWidth="900"
-        Background="{StaticResource BgBrush}"
+        Background="{DynamicResource BgBrush}"
         WindowStartupLocation="CenterScreen"
         FontFamily="Segoe UI">
 
@@ -14,20 +14,22 @@
 
         <!-- TabItem -->
         <Style TargetType="TabItem">
-            <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
             <Setter Property="FontSize" Value="13" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TabItem">
-                        <Border x:Name="bd" Height="36" Padding="16,0" Margin="0,0,4,0" CornerRadius="6"
-                                Background="Transparent">
+                        <Border x:Name="bd" Height="36" Padding="12,0" Margin="0,0,4,0" CornerRadius="6"
+                                Background="{DynamicResource PanelAltBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                             <ContentPresenter ContentSource="Header" HorizontalAlignment="Center"
                                               VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="{StaticResource AccentBrush}" />
+                                <Setter TargetName="bd" Property="Background" Value="{DynamicResource AccentBrush}" />
+                                <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
                                 <Setter Property="Foreground" Value="White" />
                             </Trigger>
                             <MultiTrigger>
@@ -35,7 +37,7 @@
                                     <Condition Property="IsSelected" Value="False" />
                                     <Condition Property="IsMouseOver" Value="True" />
                                 </MultiTrigger.Conditions>
-                                <Setter TargetName="bd" Property="Background" Value="{StaticResource PanelAltBrush}" />
+                                <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
                             </MultiTrigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -57,11 +59,11 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="{StaticResource PanelAltBrush}" />
+                                <Setter TargetName="bd" Property="Background" Value="{DynamicResource PanelAltBrush}" />
                             </Trigger>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="{StaticResource PanelAltBrush}" />
-                                <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                                <Setter TargetName="bd" Property="Background" Value="{DynamicResource PanelAltBrush}" />
+                                <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -71,12 +73,13 @@
 
         <!-- TreeViewItem -->
         <Style TargetType="TreeViewItem">
-            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
             <Setter Property="Padding" Value="2" />
         </Style>
 
-        <!-- Data template: a single selectable vault row (used in both list and tree) -->
-        <DataTemplate x:Key="VaultRowTemplate" DataType="{x:Type vm:SelectableVault}">
+        <!-- A selectable vault row. The filter argument controls which text is highlighted;
+             the list tab highlights against VaultFilter, the tree tab against SubscriptionFilter. -->
+        <DataTemplate x:Key="VaultListRowTemplate" DataType="{x:Type vm:SelectableVault}">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -84,12 +87,42 @@
                 </Grid.ColumnDefinitions>
                 <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,10,0" />
                 <StackPanel Grid.Column="1">
-                    <TextBlock Text="{Binding Vault.Name}" FontWeight="SemiBold" FontSize="13" TextTrimming="CharacterEllipsis" />
-                    <TextBlock FontSize="11" Foreground="{StaticResource MutedBrush}" TextTrimming="CharacterEllipsis">
-                        <Run Text="{Binding Vault.SubscriptionName, Mode=OneWay}" />
-                        <Run Text="  •  " />
-                        <Run Text="{Binding Vault.ResourceGroup, Mode=OneWay}" />
-                    </TextBlock>
+                    <TextBlock FontWeight="SemiBold" FontSize="13" TextTrimming="CharacterEllipsis"
+                               local:TextHighlighter.SourceText="{Binding Vault.Name}"
+                               local:TextHighlighter.Query="{Binding DataContext.VaultFilter, RelativeSource={RelativeSource AncestorType=Window}}" />
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock FontSize="11" Foreground="{DynamicResource MutedBrush}"
+                                   local:TextHighlighter.SourceText="{Binding Vault.SubscriptionName}"
+                                   local:TextHighlighter.Query="{Binding DataContext.VaultFilter, RelativeSource={RelativeSource AncestorType=Window}}" />
+                        <TextBlock Text="  •  " FontSize="11" Foreground="{DynamicResource MutedBrush}" />
+                        <TextBlock FontSize="11" Foreground="{DynamicResource MutedBrush}"
+                                   local:TextHighlighter.SourceText="{Binding Vault.ResourceGroup}"
+                                   local:TextHighlighter.Query="{Binding DataContext.VaultFilter, RelativeSource={RelativeSource AncestorType=Window}}" />
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </DataTemplate>
+
+        <DataTemplate x:Key="VaultTreeRowTemplate" DataType="{x:Type vm:SelectableVault}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                <StackPanel Grid.Column="1">
+                    <TextBlock FontWeight="SemiBold" FontSize="13" TextTrimming="CharacterEllipsis"
+                               local:TextHighlighter.SourceText="{Binding Vault.Name}"
+                               local:TextHighlighter.Query="{Binding DataContext.SubscriptionFilter, RelativeSource={RelativeSource AncestorType=Window}}" />
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock FontSize="11" Foreground="{DynamicResource MutedBrush}"
+                                   local:TextHighlighter.SourceText="{Binding Vault.SubscriptionName}"
+                                   local:TextHighlighter.Query="{Binding DataContext.SubscriptionFilter, RelativeSource={RelativeSource AncestorType=Window}}" />
+                        <TextBlock Text="  •  " FontSize="11" Foreground="{DynamicResource MutedBrush}" />
+                        <TextBlock FontSize="11" Foreground="{DynamicResource MutedBrush}"
+                                   local:TextHighlighter.SourceText="{Binding Vault.ResourceGroup}"
+                                   local:TextHighlighter.Query="{Binding DataContext.SubscriptionFilter, RelativeSource={RelativeSource AncestorType=Window}}" />
+                    </StackPanel>
                 </StackPanel>
             </Grid>
         </DataTemplate>
@@ -108,9 +141,9 @@
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                 <TextBlock Text="🔐" FontSize="22" VerticalAlignment="Center" Margin="0,0,8,0" />
                 <TextBlock Text="VaultViewer" FontSize="20" FontWeight="Bold" VerticalAlignment="Center" />
-                <Border Background="{StaticResource PanelAltBrush}" CornerRadius="10" Padding="8,2" Margin="12,0,0,0"
+                <Border Background="{DynamicResource PanelAltBrush}" CornerRadius="10" Padding="8,2" Margin="12,0,0,0"
                         VerticalAlignment="Center">
-                    <TextBlock FontSize="11" Foreground="{StaticResource MutedBrush}">
+                    <TextBlock FontSize="11" Foreground="{DynamicResource MutedBrush}">
                         <Run Text="{Binding VaultCount, Mode=OneWay}" />
                         <Run Text="vaults" />
                         <Run Text="  ·  " />
@@ -119,7 +152,13 @@
                     </TextBlock>
                 </Border>
             </StackPanel>
-            <Button Content="⟳  Refresh" HorizontalAlignment="Right" Command="{Binding RefreshCommand}" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                <Button Content="{Binding ThemeToggleContent}" ToolTip="{Binding ThemeToggleTooltip}"
+                        Height="32" MinWidth="92" VerticalAlignment="Center" Margin="0,0,8,0"
+                        Command="{Binding ToggleThemeCommand}" />
+                <Button Content="⟳  Refresh" Height="32" VerticalAlignment="Center"
+                        Command="{Binding RefreshCommand}" />
+            </StackPanel>
         </Grid>
 
         <!-- ===== Main content ===== -->
@@ -131,92 +170,103 @@
             </Grid.ColumnDefinitions>
 
             <!-- ===== Left: action bar ===== -->
-            <Border Grid.Column="0" Background="{StaticResource PanelBrush}" CornerRadius="10"
-                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
-                <DockPanel>
-
-                    <!-- Shared selection toolbar (applies across both tabs) -->
-                    <Grid DockPanel.Dock="Top" Margin="12,12,12,0">
-                        <StackPanel Orientation="Horizontal">
-                            <Button Content="Select all" Command="{Binding SelectAllCommand}"
-                                    Padding="10,4" FontSize="12" />
-                            <Button Content="Clear" Command="{Binding SelectNoneCommand}"
-                                    Padding="10,4" FontSize="12" Margin="6,0,0,0" />
-                        </StackPanel>
-                        <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"
-                                   Foreground="{StaticResource MutedBrush}">
-                            <Run Text="{Binding SelectedVaultCount, Mode=OneWay}" />
-                            <Run Text=" of " />
-                            <Run Text="{Binding VaultCount, Mode=OneWay}" />
-                            <Run Text=" selected" />
-                        </TextBlock>
-                    </Grid>
-
-                    <TabControl Background="Transparent" BorderThickness="0" Padding="12">
-                        <TabControl.Resources>
-                            <Style TargetType="TabPanel">
-                                <Setter Property="Margin" Value="0,0,0,10" />
-                            </Style>
-                        </TabControl.Resources>
+            <Border Grid.Column="0" Background="{DynamicResource PanelBrush}" CornerRadius="10"
+                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                <TabControl Background="Transparent" BorderThickness="0">
+                    <!-- Custom template so the tab strip sits 12px left of the content; the pill's
+                         12px padding then places the label text on the content's left edge. Header
+                         height is tuned to keep the filter box level with the right-pane search box. -->
+                    <TabControl.Template>
+                        <ControlTemplate TargetType="TabControl">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+                                <TabPanel Grid.Row="0" IsItemsHost="True" Margin="0,2,12,8" Background="Transparent" />
+                                <ContentPresenter Grid.Row="1" ContentSource="SelectedContent" Margin="12,0,12,12" />
+                            </Grid>
+                        </ControlTemplate>
+                    </TabControl.Template>
 
                     <!-- Vaults tab -->
-                    <TabItem Header="Vaults">
+                    <TabItem Header="Vaults" Margin="12,7,-12,-7" IsSelected="True">
                         <Grid>
                             <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="*" />
                             </Grid.RowDefinitions>
 
                             <Grid Grid.Row="0" Margin="0,0,0,8">
+                                <TextBlock VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource MutedBrush}"
+                                           Text="{Binding SelectionSummary}" />
+                                <Button HorizontalAlignment="Right" VerticalAlignment="Center"
+                                        Style="{StaticResource LinkButton}"
+                                        Content="{Binding SelectionActionLabel}" Command="{Binding ToggleSelectionCommand}" />
+                            </Grid>
+
+                            <Grid Grid.Row="1" Margin="0,0,0,8">
                                 <TextBox Text="{Binding VaultFilter, UpdateSourceTrigger=PropertyChanged}"
                                          Height="36" VerticalContentAlignment="Center" Padding="10,0" />
                                 <TextBlock Text="Filter vaults by name, subscription or RG…"
-                                           Foreground="{StaticResource MutedBrush}" FontSize="13"
+                                           Foreground="{DynamicResource MutedBrush}" FontSize="13"
                                            Margin="10,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
                                            Visibility="{Binding VaultFilter, Converter={StaticResource EmptyToVis}}" />
                             </Grid>
 
-                            <ListBox Grid.Row="1" ItemsSource="{Binding VaultsView}"
+                            <ListBox Grid.Row="2" ItemsSource="{Binding VaultsView}"
                                      Background="Transparent" BorderThickness="0"
                                      ItemContainerStyle="{StaticResource VaultItemStyle}"
-                                     ItemTemplate="{StaticResource VaultRowTemplate}"
+                                     ItemTemplate="{StaticResource VaultListRowTemplate}"
                                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                      HorizontalContentAlignment="Stretch" />
                         </Grid>
                     </TabItem>
 
                     <!-- Subscriptions tab -->
-                    <TabItem Header="Subscriptions">
+                    <TabItem Header="Subscriptions" Margin="10,7,-8,-7">
                         <Grid>
                             <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="*" />
                             </Grid.RowDefinitions>
 
                             <Grid Grid.Row="0" Margin="0,0,0,8">
+                                <TextBlock VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource MutedBrush}"
+                                           Text="{Binding SelectionSummary}" />
+                                <Button HorizontalAlignment="Right" VerticalAlignment="Center"
+                                        Style="{StaticResource LinkButton}"
+                                        Content="{Binding SelectionActionLabel}" Command="{Binding ToggleSelectionCommand}" />
+                            </Grid>
+
+                            <Grid Grid.Row="1" Margin="0,0,0,8">
                                 <TextBox Text="{Binding SubscriptionFilter, UpdateSourceTrigger=PropertyChanged}"
                                          Height="36" VerticalContentAlignment="Center" Padding="10,0" />
                                 <TextBlock Text="Filter subscriptions or vaults…"
-                                           Foreground="{StaticResource MutedBrush}" FontSize="13"
+                                           Foreground="{DynamicResource MutedBrush}" FontSize="13"
                                            Margin="10,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
                                            Visibility="{Binding SubscriptionFilter, Converter={StaticResource EmptyToVis}}" />
                             </Grid>
 
-                            <TreeView Grid.Row="1" ItemsSource="{Binding SubscriptionsView}"
+                            <TreeView Grid.Row="2" ItemsSource="{Binding SubscriptionsView}"
                                       Background="Transparent" BorderThickness="0"
                                       ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                                 <TreeView.ItemTemplate>
                                     <HierarchicalDataTemplate DataType="{x:Type vm:SubscriptionGroupViewModel}"
                                                               ItemsSource="{Binding VaultsView}"
-                                                              ItemTemplate="{StaticResource VaultRowTemplate}">
+                                                              ItemTemplate="{StaticResource VaultTreeRowTemplate}">
                                         <StackPanel Orientation="Horizontal">
                                             <CheckBox IsThreeState="True" IsChecked="{Binding IsAllSelected, Mode=OneWay}"
                                                       Command="{Binding ToggleAllCommand}"
                                                       VerticalAlignment="Center" Margin="0,0,8,0"
                                                       ToolTip="Select / deselect all vaults in this subscription" />
                                             <TextBlock Text="📁" FontSize="13" Margin="0,0,6,0" />
-                                            <TextBlock Text="{Binding SubscriptionName}" FontWeight="SemiBold" FontSize="13" />
-                                            <TextBlock FontSize="11" Foreground="{StaticResource MutedBrush}" Margin="6,0,0,0"
+                                            <TextBlock FontWeight="SemiBold" FontSize="13"
+                                                       local:TextHighlighter.SourceText="{Binding SubscriptionName}"
+                                                       local:TextHighlighter.Query="{Binding DataContext.SubscriptionFilter, RelativeSource={RelativeSource AncestorType=Window}}" />
+                                            <TextBlock FontSize="11" Foreground="{DynamicResource MutedBrush}" Margin="6,0,0,0"
                                                        VerticalAlignment="Center">
                                                 <Run Text="(" /><Run Text="{Binding VaultCount, Mode=OneWay}" /><Run Text=")" />
                                             </TextBlock>
@@ -226,16 +276,15 @@
                             </TreeView>
                         </Grid>
                     </TabItem>
-                    </TabControl>
-                </DockPanel>
+                </TabControl>
             </Border>
 
             <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Stretch"
                           Background="Transparent" />
 
             <!-- ===== Right: global search ===== -->
-            <Border Grid.Column="2" Background="{StaticResource PanelBrush}" CornerRadius="10"
-                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="16">
+            <Border Grid.Column="2" Background="{DynamicResource PanelBrush}" CornerRadius="10"
+                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="16">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -245,8 +294,8 @@
                     </Grid.RowDefinitions>
 
                     <TextBlock Grid.Row="0" Text="Global secret search" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,4" />
-                    <TextBlock Grid.Row="1" Foreground="{StaticResource MutedBrush}" FontSize="12" Margin="0,0,0,12"
-                               Text="Scans every accessible vault for secrets whose name contains your text." />
+                    <TextBlock Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,25,0,13.25"
+                               Text="Scans every accessible vault for secrets whose name contains your text." Grid.RowSpan="2" />
 
                     <!-- Search bar -->
                     <Grid Grid.Row="2" Margin="0,0,0,12">
@@ -257,17 +306,21 @@
                         </Grid.ColumnDefinitions>
 
                         <Grid Grid.Column="0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="319*"/>
+                                <ColumnDefinition Width="263*"/>
+                            </Grid.ColumnDefinitions>
                             <TextBox x:Name="SearchBox" Height="36" VerticalContentAlignment="Center"
                                      Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}"
-                                     FontSize="13" Padding="10,0">
+                                     FontSize="13" Padding="10,0" Grid.ColumnSpan="2">
                                 <TextBox.InputBindings>
                                     <KeyBinding Key="Enter" Command="{Binding SearchCommand}" />
                                 </TextBox.InputBindings>
                             </TextBox>
                             <TextBlock Text="e.g. connectionstring, apikey, password…"
-                                       Foreground="{StaticResource MutedBrush}" FontSize="13"
+                                       Foreground="{DynamicResource MutedBrush}" FontSize="13"
                                        Margin="11,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
-                                       Visibility="{Binding SearchQuery, Converter={StaticResource EmptyToVis}}" />
+                                       Visibility="{Binding SearchQuery, Converter={StaticResource EmptyToVis}}" Grid.ColumnSpan="2" />
                         </Grid>
 
                         <Button Grid.Column="1" Content="Search" Style="{StaticResource AccentButton}"
@@ -282,148 +335,221 @@
                     <StackPanel Grid.Row="2" VerticalAlignment="Bottom" Margin="0,40,0,0"
                                 Visibility="{Binding IsSearching, Converter={StaticResource BoolToVis}}">
                         <ProgressBar Height="4" Minimum="0" Maximum="{Binding ScanTotal, Mode=OneWay}" Value="{Binding ScanProgress, Mode=OneWay}"
-                                     Foreground="{StaticResource AccentBrush}" Background="{StaticResource PanelAltBrush}"
+                                     Foreground="{DynamicResource AccentBrush}" Background="{DynamicResource PanelAltBrush}"
                                      BorderThickness="0" />
                     </StackPanel>
 
-                    <!-- Results -->
-                    <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto" Margin="0,4,0,0">
-                        <ItemsControl ItemsSource="{Binding Results}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate DataType="{x:Type vm:SecretResultViewModel}">
-                                    <Border Background="{StaticResource PanelAltBrush}" CornerRadius="8" Padding="14,12"
-                                            Margin="0,0,0,10" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
-                                        <Grid>
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                            </Grid.RowDefinitions>
+                    <!-- Results / skeleton / empty state -->
+                    <Grid Grid.Row="3" Margin="0,4,0,0">
 
-                                            <!-- Secret name + actions -->
-                                            <Grid Grid.Row="0">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*" />
-                                                    <ColumnDefinition Width="Auto" />
-                                                    <ColumnDefinition Width="Auto" />
-                                                </Grid.ColumnDefinitions>
-                                                <StackPanel Orientation="Horizontal">
-                                                    <TextBlock Text="🔑" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center" />
-                                                    <TextBlock FontWeight="SemiBold" FontSize="14"
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding Results}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type vm:SecretResultViewModel}">
+                                        <Border Background="{DynamicResource PanelAltBrush}" CornerRadius="8" Padding="14,12"
+                                            Margin="0,0,0,10" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                </Grid.RowDefinitions>
+
+                                                <!-- Secret name + actions -->
+                                                <Grid Grid.Row="0">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="🔑" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                                        <TextBlock FontWeight="SemiBold" FontSize="14"
                                                                VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
                                                                local:TextHighlighter.SourceText="{Binding SecretName}"
                                                                local:TextHighlighter.Query="{Binding Query}" />
-                                                    <Border Background="#33F87171" CornerRadius="8" Padding="6,1" Margin="8,0,0,0"
+                                                        <Border Background="#33F87171" CornerRadius="8" Padding="6,1" Margin="8,0,0,0"
                                                             VerticalAlignment="Center"
                                                             Visibility="{Binding Enabled, Converter={StaticResource InverseBoolToVis}}">
-                                                        <TextBlock Text="disabled" FontSize="10" Foreground="#FFF87171" />
-                                                    </Border>
-                                                </StackPanel>
-                                                <Button Grid.Column="1" MinWidth="70" Margin="6,0,0,0"
+                                                            <TextBlock Text="disabled" FontSize="10" Foreground="#FFF87171" />
+                                                        </Border>
+                                                    </StackPanel>
+                                                    <Button Grid.Column="1" MinWidth="70" Margin="6,0,0,0"
                                                         Command="{Binding ViewCommand}">
-                                                    <Button.Style>
-                                                        <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-                                                            <Setter Property="Content" Value="View" />
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding IsRevealed}" Value="True">
-                                                                    <Setter Property="Content" Value="Hide" />
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </Button.Style>
-                                                </Button>
-                                                <Button Grid.Column="2" Content="Copy" MinWidth="60" Margin="6,0,0,0"
+                                                        <Button.Style>
+                                                            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                                                <Setter Property="Content" Value="View" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsRevealed}" Value="True">
+                                                                        <Setter Property="Content" Value="Hide" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Button.Style>
+                                                    </Button>
+                                                    <Button Grid.Column="2" Content="Copy" MinWidth="60" Margin="6,0,0,0"
                                                         Command="{Binding CopyCommand}" />
-                                            </Grid>
+                                                </Grid>
 
-                                            <!-- Value (with shimmer skeleton while fetching) -->
-                                            <Grid Grid.Row="1" Margin="0,10,0,0">
-                                                <Border Background="{StaticResource BgBrush}" CornerRadius="6"
+                                                <!-- Value (with shimmer skeleton while fetching) -->
+                                                <Grid Grid.Row="1" Margin="0,10,0,0">
+                                                    <Border Background="{DynamicResource BgBrush}" CornerRadius="6"
                                                         Padding="10,8"
-                                                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
-                                                    <TextBox Text="{Binding DisplayValue, Mode=OneWay}" IsReadOnly="True"
+                                                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                                        <TextBox Text="{Binding DisplayValue, Mode=OneWay}" IsReadOnly="True"
                                                              Background="Transparent" BorderThickness="0" Padding="0"
                                                              FontFamily="Consolas" FontSize="13" TextWrapping="Wrap" />
-                                                </Border>
+                                                    </Border>
 
-                                                <!-- Skeleton overlay: covers the value bar and slides a highlight across -->
-                                                <Border x:Name="Skeleton" CornerRadius="6" ClipToBounds="True"
-                                                        Background="{StaticResource PanelAltBrush}"
+                                                    <!-- Skeleton overlay: covers the value bar and slides a highlight across -->
+                                                    <Border x:Name="Skeleton" CornerRadius="6" ClipToBounds="True"
+                                                        Background="{DynamicResource PanelAltBrush}"
                                                         Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}">
-                                                    <Rectangle HorizontalAlignment="Left" Width="140">
-                                                        <Rectangle.Fill>
-                                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                                                <GradientStop Color="#00FFFFFF" Offset="0.0" />
-                                                                <GradientStop Color="#26FFFFFF" Offset="0.5" />
-                                                                <GradientStop Color="#00FFFFFF" Offset="1.0" />
-                                                            </LinearGradientBrush>
-                                                        </Rectangle.Fill>
-                                                        <Rectangle.RenderTransform>
-                                                            <TranslateTransform x:Name="ShimmerTransform" X="-140" />
-                                                        </Rectangle.RenderTransform>
-                                                    </Rectangle>
-                                                </Border>
+                                                        <Rectangle HorizontalAlignment="Left" Width="140">
+                                                            <Rectangle.Fill>
+                                                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                                                    <GradientStop Color="#00FFFFFF" Offset="0.0" />
+                                                                    <GradientStop Color="#26FFFFFF" Offset="0.5" />
+                                                                    <GradientStop Color="#00FFFFFF" Offset="1.0" />
+                                                                </LinearGradientBrush>
+                                                            </Rectangle.Fill>
+                                                            <Rectangle.RenderTransform>
+                                                                <TranslateTransform x:Name="ShimmerTransform" X="-140" />
+                                                            </Rectangle.RenderTransform>
+                                                        </Rectangle>
+                                                    </Border>
+                                                </Grid>
+
+                                                <!-- Provenance -->
+                                                <WrapPanel Grid.Row="2" Margin="0,10,0,0">
+                                                    <StackPanel Orientation="Horizontal" Margin="0,0,18,0">
+                                                        <TextBlock Text="Vault:  " FontSize="11" Foreground="{DynamicResource MutedBrush}" />
+                                                        <TextBlock Text="{Binding VaultName}" FontSize="11" />
+                                                    </StackPanel>
+                                                    <StackPanel Orientation="Horizontal" Margin="0,0,18,0">
+                                                        <TextBlock Text="Subscription:  " FontSize="11" Foreground="{DynamicResource MutedBrush}" />
+                                                        <TextBlock Text="{Binding SubscriptionName}" FontSize="11" />
+                                                    </StackPanel>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="Resource group:  " FontSize="11" Foreground="{DynamicResource MutedBrush}" />
+                                                        <TextBlock Text="{Binding ResourceGroup}" FontSize="11" />
+                                                    </StackPanel>
+                                                </WrapPanel>
                                             </Grid>
+                                        </Border>
 
-                                            <!-- Provenance -->
-                                            <WrapPanel Grid.Row="2" Margin="0,10,0,0">
-                                                <StackPanel Orientation="Horizontal" Margin="0,0,18,0">
-                                                    <TextBlock Text="Vault:  " FontSize="11" Foreground="{StaticResource MutedBrush}" />
-                                                    <TextBlock Text="{Binding VaultName}" FontSize="11" />
-                                                </StackPanel>
-                                                <StackPanel Orientation="Horizontal" Margin="0,0,18,0">
-                                                    <TextBlock Text="Subscription:  " FontSize="11" Foreground="{StaticResource MutedBrush}" />
-                                                    <TextBlock Text="{Binding SubscriptionName}" FontSize="11" />
-                                                </StackPanel>
-                                                <StackPanel Orientation="Horizontal">
-                                                    <TextBlock Text="Resource group:  " FontSize="11" Foreground="{StaticResource MutedBrush}" />
-                                                    <TextBlock Text="{Binding ResourceGroup}" FontSize="11" />
-                                                </StackPanel>
-                                            </WrapPanel>
-                                        </Grid>
-                                    </Border>
-
-                                    <DataTemplate.Triggers>
-                                        <DataTrigger Binding="{Binding IsBusy}" Value="True">
-                                            <DataTrigger.EnterActions>
-                                                <BeginStoryboard x:Name="ShimmerStoryboard">
-                                                    <Storyboard>
-                                                        <DoubleAnimation Storyboard.TargetName="ShimmerTransform"
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding IsBusy}" Value="True">
+                                                <DataTrigger.EnterActions>
+                                                    <BeginStoryboard x:Name="ShimmerStoryboard">
+                                                        <Storyboard>
+                                                            <DoubleAnimation Storyboard.TargetName="ShimmerTransform"
                                                                          Storyboard.TargetProperty="X"
                                                                          From="-140" To="900" Duration="0:0:1.1"
                                                                          RepeatBehavior="Forever" />
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </DataTrigger.EnterActions>
+                                                <DataTrigger.ExitActions>
+                                                    <StopStoryboard BeginStoryboardName="ShimmerStoryboard" />
+                                                </DataTrigger.ExitActions>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+
+                        <!-- Loading skeleton (pulses while searching, before any result arrives) -->
+                        <StackPanel VerticalAlignment="Top" IsHitTestVisible="False"
+                                Visibility="{Binding ShowSearchSkeleton, Converter={StaticResource BoolToVis}}">
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ShowSearchSkeleton}" Value="True">
+                                            <DataTrigger.EnterActions>
+                                                <BeginStoryboard x:Name="PulseStoryboard">
+                                                    <Storyboard>
+                                                        <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                                     From="0.9" To="0.4" Duration="0:0:0.8"
+                                                                     AutoReverse="True" RepeatBehavior="Forever" />
                                                     </Storyboard>
                                                 </BeginStoryboard>
                                             </DataTrigger.EnterActions>
                                             <DataTrigger.ExitActions>
-                                                <StopStoryboard BeginStoryboardName="ShimmerStoryboard" />
+                                                <StopStoryboard BeginStoryboardName="PulseStoryboard" />
                                             </DataTrigger.ExitActions>
                                         </DataTrigger>
-                                    </DataTemplate.Triggers>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </ScrollViewer>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <StackPanel.Resources>
+                                <Style x:Key="SkeletonCard" TargetType="Border">
+                                    <Setter Property="Background" Value="{DynamicResource PanelAltBrush}" />
+                                    <Setter Property="CornerRadius" Value="8" />
+                                    <Setter Property="Padding" Value="14,12" />
+                                    <Setter Property="Margin" Value="0,0,0,10" />
+                                    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+                                    <Setter Property="BorderThickness" Value="1" />
+                                </Style>
+                            </StackPanel.Resources>
+                            <Border Style="{StaticResource SkeletonCard}">
+                                <StackPanel>
+                                    <Border Height="14" Width="150" CornerRadius="4" HorizontalAlignment="Left" Background="{DynamicResource BorderBrush}" />
+                                    <Border Height="30" CornerRadius="6" Margin="0,12,0,0" Background="{DynamicResource BgBrush}" />
+                                    <Border Height="10" Width="240" CornerRadius="4" HorizontalAlignment="Left" Margin="0,12,0,0" Background="{DynamicResource BorderBrush}" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource SkeletonCard}">
+                                <StackPanel>
+                                    <Border Height="14" Width="120" CornerRadius="4" HorizontalAlignment="Left" Background="{DynamicResource BorderBrush}" />
+                                    <Border Height="30" CornerRadius="6" Margin="0,12,0,0" Background="{DynamicResource BgBrush}" />
+                                    <Border Height="10" Width="200" CornerRadius="4" HorizontalAlignment="Left" Margin="0,12,0,0" Background="{DynamicResource BorderBrush}" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource SkeletonCard}">
+                                <StackPanel>
+                                    <Border Height="14" Width="170" CornerRadius="4" HorizontalAlignment="Left" Background="{DynamicResource BorderBrush}" />
+                                    <Border Height="30" CornerRadius="6" Margin="0,12,0,0" Background="{DynamicResource BgBrush}" />
+                                    <Border Height="10" Width="220" CornerRadius="4" HorizontalAlignment="Left" Margin="0,12,0,0" Background="{DynamicResource BorderBrush}" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- Empty state -->
+                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="20"
+                                Visibility="{Binding ShowNoResults, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="🔍" FontSize="30" HorizontalAlignment="Center" Opacity="0.6" />
+                            <TextBlock HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
+                                   Foreground="{DynamicResource MutedBrush}" FontSize="13" Margin="0,10,0,0">
+                            <Run Text="No secrets found for &quot;" />
+                            <Run Text="{Binding LastSearchQuery, Mode=OneWay}" FontWeight="SemiBold"
+                                 Foreground="{DynamicResource TextBrush}" />
+                            <Run Text="&quot;." />
+                            </TextBlock>
+                        </StackPanel>
+
+                    </Grid>
                 </Grid>
             </Border>
         </Grid>
 
         <!-- ===== Status bar ===== -->
-        <Border Grid.Row="2" Margin="0,12,0,0" Background="{StaticResource PanelBrush}" CornerRadius="8"
-                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Padding="12,8">
+        <Border Grid.Row="2" Margin="0,12,0,0" Background="{DynamicResource PanelBrush}" CornerRadius="8"
+                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="12,8">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <TextBlock Grid.Column="0" Text="{Binding StatusText}" Foreground="{StaticResource MutedBrush}"
+                <TextBlock Grid.Column="0" Text="{Binding StatusText}" Foreground="{DynamicResource MutedBrush}"
                            FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
 
                 <!-- Discovery progress -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0"
                             Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}">
-                    <TextBlock FontSize="12" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center"
+                    <TextBlock FontSize="12" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center"
                                Margin="0,0,10,0"
                                Visibility="{Binding LoadTotal, Converter={StaticResource PositiveIntToVis}}">
                         <Run Text="Subscription" />
@@ -433,7 +559,7 @@
                     </TextBlock>
                     <ProgressBar Width="170" Height="6" Minimum="0"
                                  Maximum="{Binding LoadTotal, Mode=OneWay}" Value="{Binding LoadProgress, Mode=OneWay}"
-                                 Foreground="{StaticResource AccentBrush}" Background="{StaticResource PanelAltBrush}"
+                                 Foreground="{DynamicResource AccentBrush}" Background="{DynamicResource PanelAltBrush}"
                                  BorderThickness="0" VerticalAlignment="Center">
                         <ProgressBar.Style>
                             <Style TargetType="ProgressBar">
@@ -450,7 +576,7 @@
                 </StackPanel>
 
                 <!-- Global-search progress -->
-                <TextBlock Grid.Column="1" HorizontalAlignment="Right" FontSize="12" Foreground="{StaticResource MutedBrush}"
+                <TextBlock Grid.Column="1" HorizontalAlignment="Right" FontSize="12" Foreground="{DynamicResource MutedBrush}"
                            VerticalAlignment="Center"
                            Visibility="{Binding IsSearching, Converter={StaticResource BoolToVis}}">
                     <Run Text="Scanned" />
