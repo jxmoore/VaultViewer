@@ -182,16 +182,6 @@ public sealed class AzureService : IAzureService
     private SecretClient GetSecretClient(Uri vaultUri) =>
         _secretClients.GetOrAdd(vaultUri, uri => new SecretClient(uri, _credential));
 
-    private static Uri? ResolveVaultUri(KeyVaultResource vault)
-    {
-        var uri = vault.Data.Properties?.VaultUri;
-        if (uri is not null)
-            return uri;
-
-        // Fall back to the conventional public-cloud data-plane host if the ARM
-        // payload didn't include the URI for some reason.
-        return Uri.TryCreate($"https://{vault.Data.Name}.vault.azure.net/", UriKind.Absolute, out var built)
-            ? built
-            : null;
-    }
+    private static Uri? ResolveVaultUri(KeyVaultResource vault) =>
+        VaultUriResolver.Resolve(vault.Data.Properties?.VaultUri, vault.Data.Name);
 }
