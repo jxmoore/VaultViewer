@@ -459,8 +459,8 @@
                 </TabControl>
 
                 <!-- Left footer: settings menu (theme + refresh) -->
-                <Border Grid.Row="1" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="8,6">
-                    <Grid HorizontalAlignment="Left">
+                <Border Grid.Row="1" Height="44" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="8,0">
+                    <Grid HorizontalAlignment="Left" VerticalAlignment="Center">
                         <ToggleButton x:Name="SettingsButton" Style="{StaticResource SettingsToggle}"
                                       ToolTip="Settings">
                             <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="14" Text="&#xE713;"
@@ -496,10 +496,10 @@
                 </Grid.RowDefinitions>
 
                 <!-- Search across the top (padded) -->
-                <StackPanel Grid.Row="0" Margin="20,18,20,10">
-                    <TextBlock Text="Secret search" FontSize="16" FontWeight="SemiBold" />
+                <StackPanel Grid.Row="0" Margin="20,17,20,10">
+                    <TextBlock Text="Secret search" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,15" />
                     <TextBlock Text="{Binding SearchScopeText}" Foreground="{DynamicResource MutedBrush}"
-                               FontSize="12" Margin="0,3,0,12" />
+                               FontSize="12" Margin="0,0,0,8" />
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
@@ -720,7 +720,7 @@
                 </Grid>
 
                 <!-- Right-pane footer: status (left) + progress (bottom-right) -->
-                <Border Grid.Row="2" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="20,8">
+                <Border Grid.Row="2" Height="44" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="20,0">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
