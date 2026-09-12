@@ -145,7 +145,7 @@ public sealed class MainViewModel : ViewModelBase
 
     /// <summary>The left-pane header text: "Loading…" during discovery, otherwise the selected count.</summary>
     public string SelectionSummary =>
-        IsLoading ? "Loading…" : $"{SelectedVaultCount} of {VaultCount} selected";
+        IsLoading ? "Loading…" : $"{SelectedVaultCount} of {VaultCount} vaults selected";
 
     public bool IsSearching
     {
@@ -175,8 +175,12 @@ public sealed class MainViewModel : ViewModelBase
     public bool HasLoaded
     {
         get => _hasLoaded;
-        private set => SetField(ref _hasLoaded, value);
+        private set { if (SetField(ref _hasLoaded, value)) OnPropertyChanged(nameof(SearchScopeText)); }
     }
+
+    /// <summary>Right-pane subtitle: "Loading…" during discovery, else the selected/total scope.</summary>
+    public string SearchScopeText =>
+        HasLoaded ? $"Search {SelectedVaultCount} vaults out of {VaultCount} for secrets." : "Loading…";
 
     public int VaultCount => Vaults.Count;
     public int SubscriptionCount => Subscriptions.Count;
@@ -258,6 +262,7 @@ public sealed class MainViewModel : ViewModelBase
             OnPropertyChanged(nameof(SelectedVaultCount));
             OnPropertyChanged(nameof(SelectionActionLabel));
             OnPropertyChanged(nameof(SelectionSummary));
+            OnPropertyChanged(nameof(SearchScopeText));
             HasLoaded = true;
             StatusText = $"Found {Vaults.Count} vault(s) across {Subscriptions.Count} subscription(s).";
         }
@@ -365,6 +370,7 @@ public sealed class MainViewModel : ViewModelBase
             OnPropertyChanged(nameof(SelectedVaultCount));
             OnPropertyChanged(nameof(SelectionActionLabel));
             OnPropertyChanged(nameof(SelectionSummary));
+            OnPropertyChanged(nameof(SearchScopeText));
         }
     }
 }

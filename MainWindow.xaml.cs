@@ -25,4 +25,7 @@ public partial class MainWindow : Window
         WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
 
     private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
+
+    // A settings-popup item ran its command; close the popup.
+    private void SettingsItem_Click(object sender, RoutedEventArgs e) => SettingsButton.IsChecked = false;
 }

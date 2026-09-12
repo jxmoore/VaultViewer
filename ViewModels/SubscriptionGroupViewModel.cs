@@ -41,16 +41,8 @@ public sealed class SubscriptionGroupViewModel : ViewModelBase
 
     public RelayCommand ToggleAllCommand { get; }
 
-    /// <summary>True if all vaults selected, false if none, null if mixed.</summary>
-    public bool? IsAllSelected
-    {
-        get
-        {
-            if (Vaults.All(v => v.IsSelected)) return true;
-            if (Vaults.All(v => !v.IsSelected)) return false;
-            return null;
-        }
-    }
+    /// <summary>True only when every vault in the subscription is selected (plain two-state, no mixed).</summary>
+    public bool IsAllSelected => Vaults.All(v => v.IsSelected);
 
     /// <summary>True when the group itself or any of its vaults match the current filter.</summary>
     public bool IsVisible { get; private set; } = true;

@@ -32,7 +32,7 @@ public class SelectionTests
     }
 
     [Fact]
-    public void Group_is_indeterminate_when_selection_is_mixed()
+    public void Group_is_not_all_selected_when_selection_is_mixed()
     {
         var a = MakeVault("a");
         var b = MakeVault("b");
@@ -40,7 +40,7 @@ public class SelectionTests
 
         a.IsSelected = false;
 
-        Assert.Null(group.IsAllSelected);
+        Assert.False(group.IsAllSelected);
     }
 
     [Fact]
