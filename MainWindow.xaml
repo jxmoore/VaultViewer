@@ -521,8 +521,10 @@
                                        Visibility="{Binding SearchQuery, Converter={StaticResource EmptyToVis}}" />
                         </Grid>
 
-                        <Button Grid.Column="1" Content="Search" Style="{StaticResource AccentButton}"
-                                Height="36" Margin="8,0,0,0" MinWidth="90" Command="{Binding SearchCommand}" />
+                        <Button Grid.Column="1" Style="{StaticResource AccentButton}"
+                                Height="36" Margin="8,0,0,0" MinWidth="90" Command="{Binding SearchCommand}">
+                            <TextBlock Text="Search" Foreground="White" />
+                        </Button>
                         <Button Grid.Column="2" Content="Cancel" Height="36" Margin="8,0,0,0"
                                 Command="{Binding CancelSearchCommand}"
                                 Visibility="{Binding IsSearching, Converter={StaticResource BoolToVis}}" />
@@ -730,36 +732,28 @@
                         <TextBlock Grid.Column="0" Text="{Binding StatusText}" Foreground="{DynamicResource MutedBrush}"
                                    FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
 
-                        <!-- Discovery progress -->
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0"
-                                    Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}">
-                            <TextBlock FontSize="12" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center"
-                                       Margin="0,0,10,0"
-                                       Visibility="{Binding LoadTotal, Converter={StaticResource PositiveIntToVis}}">
-                                <Run Text="Subscription" />
-                                <Run Text="{Binding LoadProgress, Mode=OneWay}" />
-                                <Run Text="of" />
-                                <Run Text="{Binding LoadTotal, Mode=OneWay}" />
-                            </TextBlock>
-                            <ProgressBar Width="170" Height="6" Minimum="0"
-                                         Maximum="{Binding LoadTotal, Mode=OneWay}" Value="{Binding LoadProgress, Mode=OneWay}"
-                                         Foreground="{DynamicResource Accent2Brush}" Background="{DynamicResource PanelAltBrush}"
-                                         BorderThickness="0" VerticalAlignment="Center">
-                                <ProgressBar.Style>
-                                    <Style TargetType="ProgressBar">
-                                        <Setter Property="IsIndeterminate" Value="False" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding LoadTotal}" Value="0">
-                                                <Setter Property="IsIndeterminate" Value="True" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </ProgressBar.Style>
-                            </ProgressBar>
-                        </StackPanel>
+                        <!-- Discovery progress: the left status already shows "(x/N)"; fixed width so it doesn't
+                             shift as subscription names change. -->
+                        <ProgressBar Grid.Column="1" Width="240" Height="6" Minimum="0" Margin="16,0,0,0"
+                                     Maximum="{Binding LoadTotal, Mode=OneWay}" Value="{Binding LoadProgress, Mode=OneWay}"
+                                     Background="{DynamicResource PanelAltBrush}" BorderThickness="0" VerticalAlignment="Center"
+                                     Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}">
+                            <ProgressBar.Style>
+                                <Style TargetType="ProgressBar">
+                                    <Setter Property="Foreground" Value="{DynamicResource Accent2Brush}" />
+                                    <Setter Property="IsIndeterminate" Value="False" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding LoadTotal}" Value="0">
+                                            <Setter Property="IsIndeterminate" Value="True" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ProgressBar.Style>
+                        </ProgressBar>
 
-                        <!-- Global-search progress -->
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0"
+                        <!-- Global-search progress: "Scanned x/y" (not shown in the status text) + bar -->
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right"
+                                    VerticalAlignment="Center" Margin="16,0,0,0"
                                     Visibility="{Binding IsSearching, Converter={StaticResource BoolToVis}}">
                             <TextBlock FontSize="12" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center"
                                        Margin="0,0,10,0">
