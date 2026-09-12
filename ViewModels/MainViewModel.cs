@@ -9,9 +9,11 @@ namespace VaultViewer.ViewModels;
 
 public sealed class MainViewModel : ViewModelBase
 {
-    private readonly IAzureService _azure = new AzureService(new DefaultCredentialFactory());
-    private readonly IThemeService _theme = new ThemeService();
-    private readonly Dispatcher _dispatcher = Dispatcher.CurrentDispatcher;
+    private readonly IAzureService _azure;
+    private readonly IThemeService _theme;
+
+    // How results marshal back onto the UI thread. Injectable so tests can run synchronously.
+    private readonly Action<Action> _dispatch;
 
     private AppTheme _currentTheme = AppTheme.Dark;
 
@@ -30,8 +32,23 @@ public sealed class MainViewModel : ViewModelBase
     private string _lastSearchQuery = string.Empty;
     private CancellationTokenSource? _searchCts;
 
+    /// <summary>Production constructor used by the view — real Azure + theme services.</summary>
     public MainViewModel()
+        : this(new AzureService(new DefaultCredentialFactory()), new ThemeService())
     {
+    }
+
+    /// <summary>
+    /// Testable constructor. <paramref name="dispatch"/> defaults to marshalling onto the
+    /// current Dispatcher; tests pass a synchronous version.
+    /// </summary>
+    public MainViewModel(IAzureService azure, IThemeService theme, Action<Action>? dispatch = null)
+    {
+        _azure = azure;
+        _theme = theme;
+        var dispatcher = Dispatcher.CurrentDispatcher;
+        _dispatch = dispatch ?? (action => dispatcher.BeginInvoke(action));
+
         VaultsView = CollectionViewSource.GetDefaultView(Vaults);
         VaultsView.Filter = FilterVault;
 
@@ -251,7 +268,7 @@ public sealed class MainViewModel : ViewModelBase
         }
     }
 
-    private async Task SearchAsync()
+    public async Task SearchAsync()
     {
         var query = SearchQuery?.Trim() ?? string.Empty;
         if (query.Length == 0)
@@ -293,7 +310,7 @@ public sealed class MainViewModel : ViewModelBase
             {
                 Interlocked.Increment(ref found);
                 // Marshal back to the UI thread to touch the ObservableCollection.
-                _dispatcher.BeginInvoke(() =>
+                _dispatch(() =>
                 {
                     Results.Add(new SecretResultViewModel(match, _azure, m => StatusText = m, query));
                     RaiseResultStates(); // first result hides the skeleton
