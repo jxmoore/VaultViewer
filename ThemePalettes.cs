@@ -24,14 +24,14 @@ public static class ThemePalettes
 
     private static readonly IReadOnlyDictionary<string, Color> Dark = new Dictionary<string, Color>
     {
-        ["BgBrush"] = Rgb(0x16, 0x1A, 0x21),
-        ["PanelBrush"] = Rgb(0x1E, 0x24, 0x2E),
-        ["PanelAltBrush"] = Rgb(0x23, 0x2B, 0x37),
-        ["BorderBrush"] = Rgb(0x31, 0x3A, 0x48),
-        ["AccentBrush"] = Rgb(0x63, 0x66, 0xF1),
-        ["AccentHoverBrush"] = Rgb(0x7C, 0x7F, 0xF5),
-        ["TextBrush"] = Rgb(0xE6, 0xE9, 0xEF),
-        ["MutedBrush"] = Rgb(0x97, 0xA0, 0xB0),
+        ["BgBrush"] = Rgb(0x14, 0x14, 0x13),
+        ["PanelBrush"] = Rgb(0x17, 0x16, 0x15),
+        ["PanelAltBrush"] = Rgb(0x2A, 0x28, 0x25),
+        ["BorderBrush"] = Rgb(0x38, 0x35, 0x2F),
+        ["AccentBrush"] = Rgb(0xD9, 0x77, 0x57),
+        ["AccentHoverBrush"] = Rgb(0xE0, 0x8A, 0x6B),
+        ["TextBrush"] = Rgb(0xED, 0xEB, 0xE4),
+        ["MutedBrush"] = Rgb(0xA2, 0x9D, 0x93),
     };
 
     private static readonly IReadOnlyDictionary<string, Color> Light = new Dictionary<string, Color>
