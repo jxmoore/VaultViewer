@@ -82,6 +82,12 @@ public class MainViewModelTests
         public void Apply(AppTheme theme) => Applied.Add(theme);
     }
 
+    private sealed class FakeClipboard : IClipboardService
+    {
+        public string? Text { get; private set; }
+        public void SetText(string text) => Text = text;
+    }
+
     // ---- Helpers ----
 
     private static VaultInfo Vault(string name, string sub) => new()
@@ -108,7 +114,7 @@ public class MainViewModelTests
 
     private static MainViewModel NewVm(FakeAzure azure, FakeTheme? theme = null) =>
         // Synchronous dispatch so results land inline during the test.
-        new(azure, theme ?? new FakeTheme(), dispatch: a => a());
+        new(azure, theme ?? new FakeTheme(), new FakeClipboard(), dispatch: a => a());
 
     // ---- Load ----
 

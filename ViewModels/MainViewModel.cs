@@ -11,6 +11,7 @@ public sealed class MainViewModel : ViewModelBase
 {
     private readonly IAzureService _azure;
     private readonly IThemeService _theme;
+    private readonly IClipboardService _clipboard;
 
     // How results marshal back onto the UI thread. Injectable so tests can run synchronously.
     private readonly Action<Action> _dispatch;
@@ -32,9 +33,9 @@ public sealed class MainViewModel : ViewModelBase
     private string _lastSearchQuery = string.Empty;
     private CancellationTokenSource? _searchCts;
 
-    /// <summary>Production constructor used by the view — real Azure + theme services.</summary>
+    /// <summary>Production constructor used by the view — real Azure + theme + clipboard services.</summary>
     public MainViewModel()
-        : this(new AzureService(new DefaultCredentialFactory()), new ThemeService())
+        : this(new AzureService(new DefaultCredentialFactory()), new ThemeService(), new WpfClipboardService())
     {
     }
 
@@ -42,10 +43,12 @@ public sealed class MainViewModel : ViewModelBase
     /// Testable constructor. <paramref name="dispatch"/> defaults to marshalling onto the
     /// current Dispatcher; tests pass a synchronous version.
     /// </summary>
-    public MainViewModel(IAzureService azure, IThemeService theme, Action<Action>? dispatch = null)
+    public MainViewModel(IAzureService azure, IThemeService theme, IClipboardService clipboard,
+        Action<Action>? dispatch = null)
     {
         _azure = azure;
         _theme = theme;
+        _clipboard = clipboard;
         var dispatcher = Dispatcher.CurrentDispatcher;
         _dispatch = dispatch ?? (action => dispatcher.BeginInvoke(action));
 
@@ -312,7 +315,7 @@ public sealed class MainViewModel : ViewModelBase
                 // Marshal back to the UI thread to touch the ObservableCollection.
                 _dispatch(() =>
                 {
-                    Results.Add(new SecretResultViewModel(match, _azure, m => StatusText = m, query));
+                    Results.Add(new SecretResultViewModel(match, _azure, _clipboard, m => StatusText = m, query));
                     RaiseResultStates(); // first result hides the skeleton
                 });
             }
