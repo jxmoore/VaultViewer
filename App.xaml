@@ -156,6 +156,25 @@
                 </Setter>
             </Style>
 
+            <!-- ToolTip (themed so it stays readable in both light and dark) -->
+            <Style TargetType="ToolTip">
+                <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+                <Setter Property="Background" Value="{DynamicResource PanelBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ToolTip">
+                            <Border Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1"
+                                    CornerRadius="6" Padding="8,5">
+                                <ContentPresenter />
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
             <!-- CheckBox (supports checked / unchecked / indeterminate) -->
             <Style TargetType="CheckBox">
                 <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
