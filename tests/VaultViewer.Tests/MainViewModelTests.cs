@@ -356,13 +356,26 @@ public class MainViewModelTests
     {
         var vm = NewVm(AzureWith(
             ("Zeta", new[] { "zebra", "apple", "mango" }),
+            ("Alpha", new[] { "anchor" })));
+        await vm.LoadAsync();
+
+        Assert.Equal("anchor", vm.Vaults[0].Vault.Name);
+        Assert.Equal("apple", vm.Vaults[1].Vault.Name);
+        Assert.Equal("mango", vm.Vaults[2].Vault.Name);
+        Assert.Equal("zebra", vm.Vaults[3].Vault.Name);
+        Assert.Equal("Alpha", vm.Subscriptions[0].SubscriptionName);
+        Assert.Equal("Zeta", vm.Subscriptions[1].SubscriptionName);
+    });
+
+    [Fact]
+    public void LoadAsync_empty_subscriptions_sort_below_populated_ones() => OnUi(async () =>
+    {
+        var vm = NewVm(AzureWith(
+            ("Zeta", new[] { "v1" }),
             ("Alpha", Array.Empty<string>())));
         await vm.LoadAsync();
 
-        Assert.Equal("apple", vm.Vaults[0].Vault.Name);
-        Assert.Equal("mango", vm.Vaults[1].Vault.Name);
-        Assert.Equal("zebra", vm.Vaults[2].Vault.Name);
-        Assert.Equal("Alpha", vm.Subscriptions[0].SubscriptionName);
-        Assert.Equal("Zeta", vm.Subscriptions[1].SubscriptionName);
+        Assert.Equal("Zeta", vm.Subscriptions[0].SubscriptionName);
+        Assert.Equal("Alpha", vm.Subscriptions[1].SubscriptionName);
     });
 }
