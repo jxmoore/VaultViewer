@@ -13,15 +13,19 @@
             <local:PositiveIntToVisibilityConverter x:Key="PositiveIntToVis" />
             <BooleanToVisibilityConverter x:Key="BoolToVis" />
 
-            <!-- Palette (dark, slate/indigo) -->
-            <Color x:Key="BgColor">#FF161A21</Color>
-            <Color x:Key="PanelColor">#FF1E242E</Color>
-            <Color x:Key="PanelAltColor">#FF232B37</Color>
-            <Color x:Key="BorderColor">#FF313A48</Color>
-            <Color x:Key="AccentColor">#FF6366F1</Color>
-            <Color x:Key="AccentHoverColor">#FF7C7FF5</Color>
-            <Color x:Key="TextColor">#FFE6E9EF</Color>
-            <Color x:Key="MutedColor">#FF97A0B0</Color>
+            <!-- Palette (dark near-black; bright orange accent with cyan used sparingly).
+                 BgBrush is the darker left bar, PanelBrush the slightly lighter right pane;
+                 PanelAltBrush is the card/input surface. Accent2 (cyan) is limited to a few spots. -->
+            <Color x:Key="BgColor">#FF141413</Color>
+            <Color x:Key="PanelColor">#FF171615</Color>
+            <Color x:Key="PanelAltColor">#FF2A2825</Color>
+            <Color x:Key="BorderColor">#FF38352F</Color>
+            <Color x:Key="AccentColor">#FFFF5A2C</Color>
+            <Color x:Key="AccentHoverColor">#FFFF7145</Color>
+            <Color x:Key="AccentSoftColor">#33FF5A2C</Color>
+            <Color x:Key="Accent2Color">#FF4FD6E0</Color>
+            <Color x:Key="TextColor">#FFEDEBE4</Color>
+            <Color x:Key="MutedColor">#FFA29D93</Color>
 
             <SolidColorBrush x:Key="BgBrush" Color="{StaticResource BgColor}" />
             <SolidColorBrush x:Key="PanelBrush" Color="{StaticResource PanelColor}" />
@@ -29,6 +33,8 @@
             <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource BorderColor}" />
             <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
             <SolidColorBrush x:Key="AccentHoverBrush" Color="{StaticResource AccentHoverColor}" />
+            <SolidColorBrush x:Key="AccentSoftBrush" Color="{StaticResource AccentSoftColor}" />
+            <SolidColorBrush x:Key="Accent2Brush" Color="{StaticResource Accent2Color}" />
             <SolidColorBrush x:Key="TextBrush" Color="{StaticResource TextColor}" />
             <SolidColorBrush x:Key="MutedBrush" Color="{StaticResource MutedColor}" />
 
@@ -175,48 +181,84 @@
                 </Setter>
             </Style>
 
-            <!-- CheckBox (supports checked / unchecked / indeterminate) -->
-            <Style TargetType="CheckBox">
-                <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-                <Setter Property="Cursor" Value="Hand" />
-                <Setter Property="FontSize" Value="13" />
+            <!-- Themed scrollbar (adapts to light/dark via the theme brushes) -->
+            <Style x:Key="ScrollThumb" TargetType="Thumb">
+                <Setter Property="OverridesDefaultStyle" Value="True" />
                 <Setter Property="Template">
                     <Setter.Value>
-                        <ControlTemplate TargetType="CheckBox">
-                            <StackPanel Orientation="Horizontal" Background="Transparent">
-                                <Border x:Name="box" Width="16" Height="16" CornerRadius="4"
-                                        Background="{DynamicResource PanelAltBrush}"
-                                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
-                                        VerticalAlignment="Center">
-                                    <Grid>
-                                        <Path x:Name="check" Data="M 3,8 L 7,12 L 13,3" Stroke="White"
-                                              StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                                              Visibility="Collapsed" />
-                                        <Rectangle x:Name="dash" Width="8" Height="2" RadiusX="1" RadiusY="1"
-                                                   Fill="White" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                   Visibility="Collapsed" />
-                                    </Grid>
-                                </Border>
-                                <ContentPresenter Margin="6,0,0,0" VerticalAlignment="Center" />
-                            </StackPanel>
+                        <ControlTemplate TargetType="Thumb">
+                            <Border x:Name="t" CornerRadius="4" Margin="2"
+                                    Background="{DynamicResource BorderBrush}" />
                             <ControlTemplate.Triggers>
-                                <Trigger Property="IsChecked" Value="True">
-                                    <Setter TargetName="box" Property="Background" Value="{DynamicResource AccentBrush}" />
-                                    <Setter TargetName="box" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
-                                    <Setter TargetName="check" Property="Visibility" Value="Visible" />
-                                </Trigger>
-                                <Trigger Property="IsChecked" Value="{x:Null}">
-                                    <Setter TargetName="box" Property="Background" Value="{DynamicResource AccentBrush}" />
-                                    <Setter TargetName="box" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
-                                    <Setter TargetName="dash" Property="Visibility" Value="Visible" />
-                                </Trigger>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="box" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                                    <Setter TargetName="t" Property="Background" Value="{DynamicResource MutedBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsDragging" Value="True">
+                                    <Setter TargetName="t" Property="Background" Value="{DynamicResource MutedBrush}" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
+            </Style>
+
+            <Style x:Key="ScrollPageButton" TargetType="RepeatButton">
+                <Setter Property="OverridesDefaultStyle" Value="True" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="Focusable" Value="False" />
+                <Setter Property="IsTabStop" Value="False" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="RepeatButton">
+                            <Border Background="Transparent" />
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <ControlTemplate x:Key="VerticalScrollBar" TargetType="ScrollBar">
+                <Grid Background="Transparent" Width="10">
+                    <Track x:Name="PART_Track" IsDirectionReversed="True">
+                        <Track.DecreaseRepeatButton>
+                            <RepeatButton Style="{StaticResource ScrollPageButton}" Command="ScrollBar.PageUpCommand" />
+                        </Track.DecreaseRepeatButton>
+                        <Track.Thumb>
+                            <Thumb Style="{StaticResource ScrollThumb}" />
+                        </Track.Thumb>
+                        <Track.IncreaseRepeatButton>
+                            <RepeatButton Style="{StaticResource ScrollPageButton}" Command="ScrollBar.PageDownCommand" />
+                        </Track.IncreaseRepeatButton>
+                    </Track>
+                </Grid>
+            </ControlTemplate>
+
+            <ControlTemplate x:Key="HorizontalScrollBar" TargetType="ScrollBar">
+                <Grid Background="Transparent" Height="10">
+                    <Track x:Name="PART_Track">
+                        <Track.DecreaseRepeatButton>
+                            <RepeatButton Style="{StaticResource ScrollPageButton}" Command="ScrollBar.PageLeftCommand" />
+                        </Track.DecreaseRepeatButton>
+                        <Track.Thumb>
+                            <Thumb Style="{StaticResource ScrollThumb}" />
+                        </Track.Thumb>
+                        <Track.IncreaseRepeatButton>
+                            <RepeatButton Style="{StaticResource ScrollPageButton}" Command="ScrollBar.PageRightCommand" />
+                        </Track.IncreaseRepeatButton>
+                    </Track>
+                </Grid>
+            </ControlTemplate>
+
+            <Style TargetType="ScrollBar">
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="Width" Value="10" />
+                <Setter Property="Template" Value="{StaticResource VerticalScrollBar}" />
+                <Style.Triggers>
+                    <Trigger Property="Orientation" Value="Horizontal">
+                        <Setter Property="Width" Value="Auto" />
+                        <Setter Property="Height" Value="10" />
+                        <Setter Property="Template" Value="{StaticResource HorizontalScrollBar}" />
+                    </Trigger>
+                </Style.Triggers>
             </Style>
 
         </ResourceDictionary>

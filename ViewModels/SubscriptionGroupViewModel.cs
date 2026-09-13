@@ -26,7 +26,7 @@ public sealed class SubscriptionGroupViewModel : ViewModelBase
         foreach (var v in Vaults)
             v.PropertyChanged += OnVaultChanged;
 
-        ToggleAllCommand = new RelayCommand(_ => ToggleAll());
+        ToggleAllCommand = new RelayCommand(_ => ToggleAll(), _ => Vaults.Count > 0);
     }
 
     public string SubscriptionName { get; }
@@ -41,16 +41,11 @@ public sealed class SubscriptionGroupViewModel : ViewModelBase
 
     public RelayCommand ToggleAllCommand { get; }
 
-    /// <summary>True if all vaults selected, false if none, null if mixed.</summary>
-    public bool? IsAllSelected
-    {
-        get
-        {
-            if (Vaults.All(v => v.IsSelected)) return true;
-            if (Vaults.All(v => !v.IsSelected)) return false;
-            return null;
-        }
-    }
+    /// <summary>True only when the subscription has vaults and every one is selected.</summary>
+    public bool IsAllSelected => Vaults.Count > 0 && Vaults.All(v => v.IsSelected);
+
+    /// <summary>Empty subscriptions have nothing to select.</summary>
+    public bool HasVaults => Vaults.Count > 0;
 
     /// <summary>True when the group itself or any of its vaults match the current filter.</summary>
     public bool IsVisible { get; private set; } = true;

@@ -1,5 +1,7 @@
 # VaultViewer
 
+[![Tests](https://github.com/jxmoore/VaultViewer/actions/workflows/tests.yml/badge.svg)](https://github.com/jxmoore/VaultViewer/actions/workflows/tests.yml)
+
 A Windows desktop app (.NET 8 / WPF) that shows every Azure Key Vault you can
 access across all your subscriptions, and lets you search secret **names** globally.
 

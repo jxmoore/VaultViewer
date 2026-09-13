@@ -129,7 +129,7 @@ public class MainViewModelTests
         Assert.Equal(2, vm.SubscriptionCount);
         Assert.Equal(3, vm.SelectedVaultCount);
         Assert.True(vm.HasLoaded);
-        Assert.Equal("3 of 3 selected", vm.SelectionSummary);
+        Assert.Equal("3 of 3 vaults selected", vm.SelectionSummary);
     });
 
     [Fact]
@@ -248,5 +248,134 @@ public class MainViewModelTests
         Assert.Equal(new[] { AppTheme.Light, AppTheme.Dark }, theme.Applied);
         Assert.Equal("☀  Light", vm.ThemeToggleContent);
         return Task.CompletedTask;
+    });
+
+    // ---- VaultFilter ----
+
+    [Fact]
+    public void VaultFilter_by_name_shows_only_matching_vaults() => OnUi(async () =>
+    {
+        var vm = NewVm(AzureWith(("SubA", new[] { "alpha", "beta" })));
+        await vm.LoadAsync();
+
+        vm.VaultFilter = "alp";
+
+        var visible = vm.VaultsView.Cast<SelectableVault>().ToList();
+        Assert.Single(visible);
+        Assert.Equal("alpha", visible[0].Vault.Name);
+    });
+
+    [Fact]
+    public void VaultFilter_by_subscription_name_shows_all_its_vaults() => OnUi(async () =>
+    {
+        var vm = NewVm(AzureWith(("Production", new[] { "v1", "v2" }), ("Development", new[] { "v3" })));
+        await vm.LoadAsync();
+
+        vm.VaultFilter = "prod";
+
+        var visible = vm.VaultsView.Cast<SelectableVault>().ToList();
+        Assert.Equal(2, visible.Count);
+        Assert.All(visible, v => Assert.Equal("Production", v.Vault.SubscriptionName));
+    });
+
+    [Fact]
+    public void VaultFilter_by_resource_group_shows_matching_vaults() => OnUi(async () =>
+    {
+        var azure = new FakeAzure();
+        var sub = new SubscriptionInfo { SubscriptionId = "s", DisplayName = "Sub" };
+        sub.Vaults.Add(new VaultInfo { Name = "v1", VaultUri = new Uri("https://v1.vault.azure.net/"), SubscriptionId = "s", SubscriptionName = "Sub", ResourceGroup = "backend-rg" });
+        sub.Vaults.Add(new VaultInfo { Name = "v2", VaultUri = new Uri("https://v2.vault.azure.net/"), SubscriptionId = "s", SubscriptionName = "Sub", ResourceGroup = "frontend-rg" });
+        azure.Subscriptions.Add(sub);
+        var vm = NewVm(azure);
+        await vm.LoadAsync();
+
+        vm.VaultFilter = "backend";
+
+        var visible = vm.VaultsView.Cast<SelectableVault>().ToList();
+        Assert.Single(visible);
+        Assert.Equal("backend-rg", visible[0].Vault.ResourceGroup);
+    });
+
+    [Fact]
+    public void VaultFilter_no_match_hides_all_vaults() => OnUi(async () =>
+    {
+        var vm = NewVm(AzureWith(("SubA", new[] { "alpha", "beta" })));
+        await vm.LoadAsync();
+
+        vm.VaultFilter = "zzz";
+
+        Assert.Empty(vm.VaultsView.Cast<SelectableVault>());
+    });
+
+    // ---- LoadAsync error path ----
+
+    private sealed class ThrowingAzureService : IAzureService
+    {
+        public Task<IReadOnlyList<SubscriptionInfo>> DiscoverAsync(IProgress<DiscoveryProgress>? p, CancellationToken ct) =>
+            Task.FromException<IReadOnlyList<SubscriptionInfo>>(new InvalidOperationException("network error"));
+
+        public Task SearchSecretsAsync(string q, IReadOnlyList<VaultInfo> v, IProgress<ScanProgress>? p,
+            Action<SecretMatch> onMatch, CancellationToken ct) => Task.CompletedTask;
+
+        public Task<string> GetSecretValueAsync(Uri vaultUri, string secretName, CancellationToken ct) =>
+            Task.FromResult(string.Empty);
+    }
+
+    [Fact]
+    public void LoadAsync_discovery_failure_sets_status_and_hasloaded_stays_false() => OnUi(async () =>
+    {
+        var vm = new MainViewModel(new ThrowingAzureService(), new FakeTheme(), new FakeClipboard(), dispatch: a => a());
+
+        await vm.LoadAsync();
+
+        Assert.Contains("Discovery failed", vm.StatusText);
+        Assert.False(vm.HasLoaded);
+    });
+
+    // ---- ThemeToggleTooltip ----
+
+    [Fact]
+    public void ToggleTheme_flips_tooltip() => OnUi(() =>
+    {
+        var vm = NewVm(new FakeAzure());
+
+        Assert.Equal("Switch to light mode", vm.ThemeToggleTooltip);
+
+        vm.ToggleThemeCommand.Execute(null);
+        Assert.Equal("Switch to dark mode", vm.ThemeToggleTooltip);
+
+        vm.ToggleThemeCommand.Execute(null);
+        Assert.Equal("Switch to light mode", vm.ThemeToggleTooltip);
+        return Task.CompletedTask;
+    });
+
+    // ---- Alphabetical ordering ----
+
+    [Fact]
+    public void LoadAsync_sorts_vaults_and_subscriptions_alphabetically() => OnUi(async () =>
+    {
+        var vm = NewVm(AzureWith(
+            ("Zeta", new[] { "zebra", "apple", "mango" }),
+            ("Alpha", new[] { "anchor" })));
+        await vm.LoadAsync();
+
+        Assert.Equal("anchor", vm.Vaults[0].Vault.Name);
+        Assert.Equal("apple", vm.Vaults[1].Vault.Name);
+        Assert.Equal("mango", vm.Vaults[2].Vault.Name);
+        Assert.Equal("zebra", vm.Vaults[3].Vault.Name);
+        Assert.Equal("Alpha", vm.Subscriptions[0].SubscriptionName);
+        Assert.Equal("Zeta", vm.Subscriptions[1].SubscriptionName);
+    });
+
+    [Fact]
+    public void LoadAsync_empty_subscriptions_sort_below_populated_ones() => OnUi(async () =>
+    {
+        var vm = NewVm(AzureWith(
+            ("Zeta", new[] { "v1" }),
+            ("Alpha", Array.Empty<string>())));
+        await vm.LoadAsync();
+
+        Assert.Equal("Zeta", vm.Subscriptions[0].SubscriptionName);
+        Assert.Equal("Alpha", vm.Subscriptions[1].SubscriptionName);
     });
 }

@@ -19,19 +19,21 @@ public static class ThemePalettes
     public static readonly IReadOnlyList<string> Keys = new[]
     {
         "BgBrush", "PanelBrush", "PanelAltBrush", "BorderBrush",
-        "AccentBrush", "AccentHoverBrush", "TextBrush", "MutedBrush"
+        "AccentBrush", "AccentHoverBrush", "AccentSoftBrush", "Accent2Brush", "TextBrush", "MutedBrush"
     };
 
     private static readonly IReadOnlyDictionary<string, Color> Dark = new Dictionary<string, Color>
     {
-        ["BgBrush"] = Rgb(0x16, 0x1A, 0x21),
-        ["PanelBrush"] = Rgb(0x1E, 0x24, 0x2E),
-        ["PanelAltBrush"] = Rgb(0x23, 0x2B, 0x37),
-        ["BorderBrush"] = Rgb(0x31, 0x3A, 0x48),
-        ["AccentBrush"] = Rgb(0x63, 0x66, 0xF1),
-        ["AccentHoverBrush"] = Rgb(0x7C, 0x7F, 0xF5),
-        ["TextBrush"] = Rgb(0xE6, 0xE9, 0xEF),
-        ["MutedBrush"] = Rgb(0x97, 0xA0, 0xB0),
+        ["BgBrush"] = Rgb(0x14, 0x14, 0x13),
+        ["PanelBrush"] = Rgb(0x17, 0x16, 0x15),
+        ["PanelAltBrush"] = Rgb(0x2A, 0x28, 0x25),
+        ["BorderBrush"] = Rgb(0x38, 0x35, 0x2F),
+        ["AccentBrush"] = Rgb(0xFF, 0x5A, 0x2C),
+        ["AccentHoverBrush"] = Rgb(0xFF, 0x71, 0x45),
+        ["AccentSoftBrush"] = Argb(0x33, 0xFF, 0x5A, 0x2C),
+        ["Accent2Brush"] = Rgb(0x4F, 0xD6, 0xE0),
+        ["TextBrush"] = Rgb(0xED, 0xEB, 0xE4),
+        ["MutedBrush"] = Rgb(0xA2, 0x9D, 0x93),
     };
 
     private static readonly IReadOnlyDictionary<string, Color> Light = new Dictionary<string, Color>
@@ -42,6 +44,8 @@ public static class ThemePalettes
         ["BorderBrush"] = Rgb(0xD6, 0xDA, 0xE1),
         ["AccentBrush"] = Rgb(0x63, 0x66, 0xF1),
         ["AccentHoverBrush"] = Rgb(0x54, 0x57, 0xE5),
+        ["AccentSoftBrush"] = Argb(0x22, 0x63, 0x66, 0xF1),
+        ["Accent2Brush"] = Rgb(0x0E, 0x9A, 0xA7),
         ["TextBrush"] = Rgb(0x1B, 0x23, 0x30),
         ["MutedBrush"] = Rgb(0x6B, 0x72, 0x80),
     };
@@ -50,4 +54,6 @@ public static class ThemePalettes
         theme == AppTheme.Light ? Light : Dark;
 
     private static Color Rgb(byte r, byte g, byte b) => Color.FromArgb(0xFF, r, g, b);
+
+    private static Color Argb(byte a, byte r, byte g, byte b) => Color.FromArgb(a, r, g, b);
 }

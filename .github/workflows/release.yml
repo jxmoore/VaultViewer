@@ -1,0 +1,47 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v3
+        with:
+          versionSpec: '6.x'
+
+      - name: Determine version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v3
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Run tests
+        run: dotnet test tests/VaultViewer.Tests/VaultViewer.Tests.csproj --configuration Release
+
+      - name: Publish
+        run: dotnet publish VaultViewer.csproj --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true --output ./publish
+
+      - name: Package binary
+        shell: pwsh
+        run: Compress-Archive -Path ./publish/* -DestinationPath VaultViewer-win-x64.zip
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.gitversion.outputs.semVer }}
+          name: VaultViewer v${{ steps.gitversion.outputs.semVer }}
+          files: VaultViewer-win-x64.zip
+          generate_release_notes: true

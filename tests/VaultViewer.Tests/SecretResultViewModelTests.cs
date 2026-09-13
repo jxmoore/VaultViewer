@@ -121,4 +121,18 @@ public class SecretResultViewModelTests
         Assert.NotNull(status);
         Assert.Contains("Could not read", status);
     }
+
+    [Fact]
+    public void Copy_failure_reports_status_and_leaves_clipboard_empty()
+    {
+        string? status = null;
+        var clip = new FakeClipboard();
+        var vm = New(new FakeAzure(throwOnGet: true), clip, s => status = s);
+
+        vm.CopyCommand.Execute(null);
+
+        Assert.Null(clip.Text);
+        Assert.NotNull(status);
+        Assert.Contains("Could not copy", status);
+    }
 }
