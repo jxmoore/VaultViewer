@@ -18,9 +18,9 @@ public class ThemePalettesTests
     [Fact]
     public void Dark_background_matches_the_app_default()
     {
-        // App.xaml's BgColor is #FF161A21; toggling back to dark must restore it exactly.
+        // App.xaml's BgColor is #FF141413; toggling back to dark must restore it exactly.
         var bg = ThemePalettes.For(AppTheme.Dark)["BgBrush"];
-        Assert.Equal((0xFF, 0x16, 0x1A, 0x21), (bg.A, bg.R, bg.G, bg.B));
+        Assert.Equal((0xFF, 0x14, 0x14, 0x13), (bg.A, bg.R, bg.G, bg.B));
     }
 
     [Fact]
@@ -32,9 +32,14 @@ public class ThemePalettesTests
     }
 
     [Fact]
-    public void Accent_is_shared_across_themes()
+    public void Accent_differs_per_theme_coral_in_dark_indigo_in_light()
     {
-        Assert.Equal(ThemePalettes.For(AppTheme.Dark)["AccentBrush"],
-                     ThemePalettes.For(AppTheme.Light)["AccentBrush"]);
+        var dark = ThemePalettes.For(AppTheme.Dark)["AccentBrush"];
+        var light = ThemePalettes.For(AppTheme.Light)["AccentBrush"];
+
+        Assert.NotEqual(dark, light);
+        // Dark accent is warm (coral): red dominates. Light accent is indigo: blue dominates.
+        Assert.True(dark.R > dark.B);
+        Assert.True(light.B > light.R);
     }
 }

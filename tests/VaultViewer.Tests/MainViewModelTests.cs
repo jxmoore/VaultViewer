@@ -129,7 +129,7 @@ public class MainViewModelTests
         Assert.Equal(2, vm.SubscriptionCount);
         Assert.Equal(3, vm.SelectedVaultCount);
         Assert.True(vm.HasLoaded);
-        Assert.Equal("3 of 3 selected", vm.SelectionSummary);
+        Assert.Equal("3 of 3 vaults selected", vm.SelectionSummary);
     });
 
     [Fact]

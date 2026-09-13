@@ -32,7 +32,7 @@ public class SelectionTests
     }
 
     [Fact]
-    public void Group_is_indeterminate_when_selection_is_mixed()
+    public void Group_is_not_all_selected_when_selection_is_mixed()
     {
         var a = MakeVault("a");
         var b = MakeVault("b");
@@ -40,7 +40,7 @@ public class SelectionTests
 
         a.IsSelected = false;
 
-        Assert.Null(group.IsAllSelected);
+        Assert.False(group.IsAllSelected);
     }
 
     [Fact]
@@ -54,6 +54,24 @@ public class SelectionTests
         b.IsSelected = false;
 
         Assert.False(group.IsAllSelected);
+    }
+
+    [Fact]
+    public void Empty_group_is_not_selected_and_cannot_toggle()
+    {
+        var group = MakeGroup();
+
+        Assert.False(group.HasVaults);
+        Assert.False(group.IsAllSelected);
+        Assert.False(group.ToggleAllCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public void Nonempty_group_can_toggle()
+    {
+        var group = MakeGroup(MakeVault("a"));
+
+        Assert.True(group.ToggleAllCommand.CanExecute(null));
     }
 
     [Fact]
