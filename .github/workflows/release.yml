@@ -1,0 +1,45 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  release:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Run tests
+        run: dotnet test tests/VaultViewer.Tests/VaultViewer.Tests.csproj --configuration Release
+
+      - name: Publish
+        run: dotnet publish VaultViewer.csproj --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true --output ./publish
+
+      - name: Get version
+        id: version
+        shell: pwsh
+        run: |
+          $xml = [xml](Get-Content VaultViewer.csproj)
+          $ver = $xml.Project.PropertyGroup.Version
+          $sha = "${{ github.sha }}".Substring(0, 7)
+          echo "tag=v$ver-$sha" >> $env:GITHUB_OUTPUT
+
+      - name: Package binary
+        shell: pwsh
+        run: Compress-Archive -Path ./publish/* -DestinationPath VaultViewer-win-x64.zip
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: VaultViewer ${{ steps.version.outputs.tag }}
+          files: VaultViewer-win-x64.zip
+          generate_release_notes: true
