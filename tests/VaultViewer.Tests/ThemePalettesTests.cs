@@ -42,4 +42,17 @@ public class ThemePalettesTests
         Assert.True(dark.R > dark.B);
         Assert.True(light.R > light.B);
     }
+
+    [Fact]
+    public void Accent2_is_cyan_in_dark_and_red_in_light()
+    {
+        var dark = ThemePalettes.For(AppTheme.Dark)["Accent2Brush"];
+        var light = ThemePalettes.For(AppTheme.Light)["Accent2Brush"];
+
+        // Dark accent 2 is cyan (blue/green dominate, red near-zero).
+        Assert.True(dark.B > dark.R);
+        // Light accent 2 (used for progress bars) is red (red dominates green and blue).
+        Assert.True(light.R > light.G);
+        Assert.True(light.R > light.B);
+    }
 }
