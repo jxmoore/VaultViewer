@@ -30,10 +30,14 @@ public class ThemeSettingsServiceTests : IDisposable
             FontFamily = "Consolas",
             FontSize = 15,
             WindowOpacity = 0.8,
-            Colors = new Dictionary<string, string>
+            DarkColors = new Dictionary<string, string>
             {
                 ["BgBrush"] = "#FF141413",
                 ["AccentBrush"] = "#FFFF5A2C",
+            },
+            LightColors = new Dictionary<string, string>
+            {
+                ["BgBrush"] = "#FFF4F5F7",
             }
         };
 
@@ -43,8 +47,9 @@ public class ThemeSettingsServiceTests : IDisposable
         Assert.Equal(original.FontFamily, loaded.FontFamily);
         Assert.Equal(original.FontSize, loaded.FontSize);
         Assert.Equal(original.WindowOpacity, loaded.WindowOpacity);
-        Assert.Equal(original.Colors["BgBrush"], loaded.Colors["BgBrush"]);
-        Assert.Equal(original.Colors["AccentBrush"], loaded.Colors["AccentBrush"]);
+        Assert.Equal(original.DarkColors["BgBrush"], loaded.DarkColors["BgBrush"]);
+        Assert.Equal(original.DarkColors["AccentBrush"], loaded.DarkColors["AccentBrush"]);
+        Assert.Equal(original.LightColors["BgBrush"], loaded.LightColors["BgBrush"]);
     }
 
     [Fact]
@@ -64,6 +69,7 @@ public class ThemeSettingsServiceTests : IDisposable
         Assert.Equal("Segoe UI", settings.FontFamily);
         Assert.Equal(13, settings.FontSize);
         Assert.Equal(1.0, settings.WindowOpacity);
-        Assert.Empty(settings.Colors);
+        Assert.Empty(settings.DarkColors);
+        Assert.Empty(settings.LightColors);
     }
 }

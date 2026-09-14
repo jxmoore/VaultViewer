@@ -36,7 +36,8 @@ public sealed class ThemeService : IThemeService
         if (resources is null)
             return;
 
-        foreach (var (key, hex) in settings.Colors)
+        var colors = Current == AppTheme.Light ? settings.LightColors : settings.DarkColors;
+        foreach (var (key, hex) in colors)
         {
             var color = ParseHex(hex);
             if (color is null) continue;

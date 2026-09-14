@@ -113,10 +113,11 @@ public sealed class ThemeSettingsViewModel : ViewModelBase
     private void Load()
     {
         var settings = _service.Load();
+        var colors = ColorsFor(settings);
 
         foreach (var entry in ColorEntries)
         {
-            if (settings.Colors.TryGetValue(entry.Key, out var hex) && !string.IsNullOrWhiteSpace(hex))
+            if (colors.TryGetValue(entry.Key, out var hex) && !string.IsNullOrWhiteSpace(hex))
                 entry.Hex = hex;
         }
 
@@ -129,20 +130,25 @@ public sealed class ThemeSettingsViewModel : ViewModelBase
 
     private void ExecuteSave()
     {
-        var settings = new CustomThemeSettings
-        {
-            FontFamily = SelectedFont,
-            FontSize = FontSize,
-            WindowOpacity = WindowOpacity,
-        };
+        // Re-load rather than start from a blank settings object, so the *other* theme's
+        // saved colors aren't wiped out by a save made while this theme is active.
+        var settings = _service.Load();
+        settings.FontFamily = SelectedFont;
+        settings.FontSize = FontSize;
+        settings.WindowOpacity = WindowOpacity;
 
+        var colors = ColorsFor(settings);
+        colors.Clear();
         foreach (var entry in ColorEntries)
-            settings.Colors[entry.Key] = entry.Hex;
+            colors[entry.Key] = entry.Hex;
 
         _service.Save(settings);
         _themeService.ApplyCustomSettings(settings);
         CloseRequested?.Invoke(this, EventArgs.Empty);
     }
+
+    private Dictionary<string, string> ColorsFor(CustomThemeSettings settings) =>
+        _themeService.Current == AppTheme.Light ? settings.LightColors : settings.DarkColors;
 
     private string DefaultHex(string key)
     {

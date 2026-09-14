@@ -42,7 +42,7 @@ public class ThemeSettingsViewModelTests
                 FontFamily = "Consolas",
                 FontSize = 18,
                 WindowOpacity = 0.5,
-                Colors = new Dictionary<string, string> { ["BgBrush"] = "#FF000000" }
+                DarkColors = new Dictionary<string, string> { ["BgBrush"] = "#FF000000" }
             }
         };
         var vm = new ThemeSettingsViewModel(service, new FakeTheme());
@@ -71,5 +71,33 @@ public class ThemeSettingsViewModelTests
         var expected = ThemePalettes.For(AppTheme.Light)["BgBrush"];
         var expectedHex = $"#{expected.A:X2}{expected.R:X2}{expected.G:X2}{expected.B:X2}";
         Assert.Equal(expectedHex, vm.ColorEntries.Single(e => e.Key == "BgBrush").Hex);
+    }
+
+    [Fact]
+    public void Saving_colors_in_one_theme_does_not_leak_into_the_other_theme()
+    {
+        // Reproduces the reported bug: save custom colors while in light mode, switch to
+        // dark mode, reopen Theme Settings — it must show dark's own colors, not light's.
+        var service = new FakeSettingsService();
+        var theme = new FakeTheme();
+        theme.Apply(AppTheme.Light);
+
+        var lightVm = new ThemeSettingsViewModel(service, theme);
+        lightVm.ColorEntries.Single(e => e.Key == "BgBrush").Hex = "#FFAAAAAA";
+        lightVm.SaveCommand.Execute(null);
+
+        Assert.Empty(service.Stored.DarkColors);
+        Assert.Equal("#FFAAAAAA", service.Stored.LightColors["BgBrush"]);
+
+        theme.Apply(AppTheme.Dark);
+        var darkVm = new ThemeSettingsViewModel(service, theme);
+
+        var expectedDarkBg = ThemePalettes.For(AppTheme.Dark)["BgBrush"];
+        var expectedDarkBgHex = $"#{expectedDarkBg.A:X2}{expectedDarkBg.R:X2}{expectedDarkBg.G:X2}{expectedDarkBg.B:X2}";
+        Assert.Equal(expectedDarkBgHex, darkVm.ColorEntries.Single(e => e.Key == "BgBrush").Hex);
+
+        // Saving while dark must not disturb light's previously saved colors either.
+        darkVm.SaveCommand.Execute(null);
+        Assert.Equal("#FFAAAAAA", service.Stored.LightColors["BgBrush"]);
     }
 }
