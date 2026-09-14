@@ -12,6 +12,7 @@
             <local:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVis" />
             <local:PositiveIntToVisibilityConverter x:Key="PositiveIntToVis" />
             <BooleanToVisibilityConverter x:Key="BoolToVis" />
+            <local:HexToColorBrushConverter x:Key="HexToColorBrush" />
 
             <!-- Palette (dark near-black; bright orange accent with cyan used sparingly).
                  BgBrush is the darker left bar, PanelBrush the slightly lighter right pane;
@@ -41,7 +42,8 @@
             <!-- Base text -->
             <Style TargetType="TextBlock">
                 <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-                <Setter Property="FontFamily" Value="Segoe UI" />
+                <Setter Property="FontFamily" Value="{DynamicResource AppFontFamily}" />
+                <Setter Property="FontSize" Value="{DynamicResource AppFontSize}" />
             </Style>
 
             <!-- TextBox -->
@@ -52,7 +54,7 @@
                 <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
                 <Setter Property="BorderThickness" Value="1" />
                 <Setter Property="Padding" Value="8,6" />
-                <Setter Property="FontSize" Value="13" />
+                <Setter Property="FontSize" Value="{DynamicResource AppFontSize}" />
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="TextBox">
@@ -79,7 +81,7 @@
                 <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
                 <Setter Property="BorderThickness" Value="1" />
                 <Setter Property="Padding" Value="12,6" />
-                <Setter Property="FontSize" Value="13" />
+                <Setter Property="FontSize" Value="{DynamicResource AppFontSize}" />
                 <Setter Property="Cursor" Value="Hand" />
                 <Setter Property="Template">
                     <Setter.Value>
