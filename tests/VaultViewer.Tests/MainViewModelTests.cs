@@ -79,7 +79,9 @@ public class MainViewModelTests
     private sealed class FakeTheme : IThemeService
     {
         public List<AppTheme> Applied { get; } = new();
-        public void Apply(AppTheme theme) => Applied.Add(theme);
+        public AppTheme Current { get; private set; } = AppTheme.Dark;
+        public void Apply(AppTheme theme) { Applied.Add(theme); Current = theme; }
+        public void ApplyCustomSettings(CustomThemeSettings settings) { }
     }
 
     private sealed class FakeClipboard : IClipboardService
@@ -250,6 +252,19 @@ public class MainViewModelTests
         return Task.CompletedTask;
     });
 
+    [Fact]
+    public void Theme_exposes_the_same_service_instance_so_other_windows_see_the_current_theme() => OnUi(() =>
+    {
+        var theme = new FakeTheme();
+        var vm = NewVm(new FakeAzure(), theme);
+
+        Assert.Same(theme, vm.Theme);
+
+        vm.ToggleThemeCommand.Execute(null);
+        Assert.Equal(AppTheme.Light, vm.Theme.Current);
+        return Task.CompletedTask;
+    });
+
     // ---- VaultFilter ----
 
     [Fact]
@@ -352,19 +367,21 @@ public class MainViewModelTests
     // ---- Alphabetical ordering ----
 
     [Fact]
-    public void LoadAsync_sorts_vaults_and_subscriptions_alphabetically() => OnUi(async () =>
+    public void LoadAsync_sorts_vaults_alphabetically_and_subscriptions_by_vault_count_desc() => OnUi(async () =>
     {
         var vm = NewVm(AzureWith(
             ("Zeta", new[] { "zebra", "apple", "mango" }),
             ("Alpha", new[] { "anchor" })));
         await vm.LoadAsync();
 
+        // Vaults: alphabetical across all subscriptions
         Assert.Equal("anchor", vm.Vaults[0].Vault.Name);
         Assert.Equal("apple", vm.Vaults[1].Vault.Name);
         Assert.Equal("mango", vm.Vaults[2].Vault.Name);
         Assert.Equal("zebra", vm.Vaults[3].Vault.Name);
-        Assert.Equal("Alpha", vm.Subscriptions[0].SubscriptionName);
-        Assert.Equal("Zeta", vm.Subscriptions[1].SubscriptionName);
+        // Subscriptions: descending by vault count (Zeta=3 before Alpha=1)
+        Assert.Equal("Zeta", vm.Subscriptions[0].SubscriptionName);
+        Assert.Equal("Alpha", vm.Subscriptions[1].SubscriptionName);
     });
 
     [Fact]

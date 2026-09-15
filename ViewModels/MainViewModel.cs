@@ -16,8 +16,6 @@ public sealed class MainViewModel : ViewModelBase
     // How results marshal back onto the UI thread. Injectable so tests can run synchronously.
     private readonly Action<Action> _dispatch;
 
-    private AppTheme _currentTheme = AppTheme.Dark;
-
     private string _vaultFilter = string.Empty;
     private string _subscriptionFilter = string.Empty;
     private string _searchQuery = string.Empty;
@@ -68,16 +66,19 @@ public sealed class MainViewModel : ViewModelBase
     // ---- Theme toggle ----
     public RelayCommand ToggleThemeCommand { get; }
 
+    /// <summary>The theme service, shared so other windows (e.g. Theme Settings) see the same
+    /// <see cref="IThemeService.Current"/> theme instead of tracking their own copy of it.</summary>
+    public IThemeService Theme => _theme;
+
     /// <summary>Label/icon for the toggle — it advertises the theme you'd switch TO.</summary>
-    public string ThemeToggleContent => _currentTheme == AppTheme.Dark ? "☀  Light" : "🌙  Dark";
+    public string ThemeToggleContent => _theme.Current == AppTheme.Dark ? "☀  Light" : "🌙  Dark";
 
     public string ThemeToggleTooltip =>
-        _currentTheme == AppTheme.Dark ? "Switch to light mode" : "Switch to dark mode";
+        _theme.Current == AppTheme.Dark ? "Switch to light mode" : "Switch to dark mode";
 
     private void ToggleTheme()
     {
-        _currentTheme = _currentTheme == AppTheme.Dark ? AppTheme.Light : AppTheme.Dark;
-        _theme.Apply(_currentTheme);
+        _theme.Apply(_theme.Current == AppTheme.Dark ? AppTheme.Light : AppTheme.Dark);
         OnPropertyChanged(nameof(ThemeToggleContent));
         OnPropertyChanged(nameof(ThemeToggleTooltip));
     }
@@ -251,9 +252,8 @@ public sealed class MainViewModel : ViewModelBase
                 Vaults.Add(sv);
             }
 
-            // Subscriptions with vaults first (alphabetical), empty ones sorted to the bottom.
-            var orderedSubs = subs.OrderBy(s => s.Vaults.Count == 0 ? 1 : 0)
-                                  .ThenBy(s => s.DisplayName, StringComparer.OrdinalIgnoreCase);
+            // Subscriptions sorted descending by vault count.
+            var orderedSubs = subs.OrderByDescending(s => s.Vaults.Count);
             foreach (var s in orderedSubs)
             {
                 var groupVaults = s.Vaults.Select(v => selectableByVault[v]).ToList();
