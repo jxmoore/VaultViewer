@@ -31,17 +31,24 @@ jobs:
       - name: Run tests
         run: dotnet test tests/VaultViewer.Tests/VaultViewer.Tests.csproj --configuration Release
 
-      - name: Publish
-        run: dotnet publish VaultViewer.csproj --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true --output ./publish
+      - name: Publish (self-contained, includes .NET runtime)
+        run: dotnet publish VaultViewer.csproj --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true --output ./publish-selfcontained
 
-      - name: Package binary
+      - name: Publish (framework-dependent, requires .NET 8 Desktop Runtime)
+        run: dotnet publish VaultViewer.csproj --configuration Release --runtime win-x64 --self-contained false -p:PublishSingleFile=true --output ./publish-framework-dependent
+
+      - name: Package binaries
         shell: pwsh
-        run: Compress-Archive -Path ./publish/* -DestinationPath VaultViewer-win-x64.zip
+        run: |
+          Compress-Archive -Path ./publish-selfcontained/* -DestinationPath VaultViewer-win-x64-selfcontained.zip
+          Compress-Archive -Path ./publish-framework-dependent/* -DestinationPath VaultViewer-win-x64-net8-required.zip
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.gitversion.outputs.MajorMinorPatch }}
           name: VaultViewer v${{ steps.gitversion.outputs.MajorMinorPatch }}
-          files: VaultViewer-win-x64.zip
+          files: |
+            VaultViewer-win-x64-selfcontained.zip
+            VaultViewer-win-x64-net8-required.zip
           generate_release_notes: true
