@@ -44,11 +44,32 @@ jobs:
           Compress-Archive -Path ./publish-framework-dependent/* -DestinationPath VaultViewer-win-x64-net8-required.zip
 
       - name: Create GitHub release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ steps.gitversion.outputs.MajorMinorPatch }}
-          name: VaultViewer v${{ steps.gitversion.outputs.MajorMinorPatch }}
-          files: |
-            VaultViewer-win-x64-selfcontained.zip
-            VaultViewer-win-x64-net8-required.zip
-          generate_release_notes: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: v${{ steps.gitversion.outputs.MajorMinorPatch }}
+        run: |
+          # Idempotent: a rerun after a partial failure (see below) must not choke
+          # trying to recreate a release that already exists.
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" \
+              --title "VaultViewer $TAG" \
+              --generate-notes
+          fi
+
+          # Asset uploads to GitHub's Releases API occasionally fail on large files
+          # with a transient 500 ("Error saving asset"); retry a few times before
+          # giving up rather than leaving the release without its binaries.
+          for file in VaultViewer-win-x64-selfcontained.zip VaultViewer-win-x64-net8-required.zip; do
+            for attempt in 1 2 3; do
+              if gh release upload "$TAG" "$file" --clobber; then
+                break
+              fi
+              if [ "$attempt" = 3 ]; then
+                echo "::error::Failed to upload $file after 3 attempts"
+                exit 1
+              fi
+              echo "Upload of $file failed (attempt $attempt/3); retrying in 15s…"
+              sleep 15
+            done
+          done
