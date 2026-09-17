@@ -1,22 +1,22 @@
 # VaultViewer
 
-[![Tests](https://github.com/jxmoore/VaultViewer/actions/workflows/tests.yml/badge.svg)](https://github.com/jxmoore/VaultViewer/actions/workflows/tests.yml)
+[![Tests](https://github.com/jxmoore/VaultViewer/actions/workflows/tests.yml/badge.svg?branch=develop)](https://github.com/jxmoore/VaultViewer/actions/workflows/tests.yml)
 
-A Windows desktop app (.NET 8 / WPF) that shows every Azure Key Vault you can
-access across all your subscriptions, and lets you search secret **names** globally.
+VaultViewer is a lightweight Windows desktop app (.NET 8 / WPF) for browsing and
+searching Azure Key Vault secrets across every subscription you have access to.
+Point it at your Azure account and it discovers every vault up front. The vaults are browsable
+as a flat list or grouped by subscription. It also lets you search secret **names**
+globally, scanning every accessible vault in parallel. Secret *values* are never
+fetched until you explicitly reveal or copy one. Light and dark themes are built
+in, with full color/font customization.
 
-## Features
-
-- **Left pane** – a tabbed action bar:
-  - **Vaults** tab: a flat, searchable list of every vault (filter by vault name,
-    subscription, or resource group).
-  - **Subscriptions** tab: vaults grouped under their subscription in a tree,
-    with its own filter.
-- **Right pane** – **global secret search**: type part of a secret name and the
-  app scans every accessible vault in parallel. Each match shows the secret name,
-  vault, subscription, and resource group, with **View** (reveal, masked by
-  default) and **Copy** (to clipboard) actions. Secret *values* are only fetched
-  on demand — never during the scan.
+<table>
+  <tr>
+    <td align="center"><img src="screenshots/dark_initial_load.png" width="260"><br><sub>Vaults across every subscription</sub></td>
+    <td align="center"><img src="screenshots/dark_search_results.png" width="260"><br><sub>Global secret search</sub></td>
+    <td align="center"><img src="screenshots/light_search_results.png" width="260"><br><sub>Light mode</sub></td>
+  </tr>
+</table>
 
 ## Authentication
 
@@ -52,26 +52,3 @@ Your identity needs:
 - A data-plane role such as **Key Vault Secrets User** / **Reader**, or an
   access-policy grant, on each vault to list and read secrets. Vaults you can't
   read are skipped silently during search.
-
-## Build & run
-
-```bash
-dotnet build
-dotnet run
-```
-
-The built exe lands in `bin/Debug/net8.0-windows/VaultViewer.exe`.
-
-## Project layout
-
-| Path | Purpose |
-|------|---------|
-| `Models/` | `SubscriptionInfo`, `VaultInfo`, `SecretMatch` |
-| `Services/IAzureService` + `AzureService.cs` | ARM + Key Vault access, concurrent search |
-| `Services/ICredentialFactory` + `DefaultCredentialFactory.cs` | Builds the credential chain (incl. browser fallback) |
-| `ViewModels/` | MVVM: `MainViewModel`, per-result and per-subscription VMs |
-| `MainWindow.xaml` | Two-pane UI |
-| `App.xaml` | Dark theme + styles |
-| `tests/VaultViewer.Tests/` | xUnit tests |
-
-Run the tests with `dotnet test`.
