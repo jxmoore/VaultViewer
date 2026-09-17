@@ -4,8 +4,8 @@
 
 VaultViewer is a lightweight Windows desktop app (.NET 8 / WPF) for browsing and
 searching Azure Key Vault secrets across every subscription you have access to.
-Point it at your Azure account and it discovers every vault up front — browsable
-as a flat list or grouped by subscription — then lets you search secret **names**
+Point it at your Azure account and it discovers every vault up front. The vaults are browsable
+as a flat list or grouped by subscription. It also lets you search secret **names**
 globally, scanning every accessible vault in parallel. Secret *values* are never
 fetched until you explicitly reveal or copy one. Light and dark themes are built
 in, with full color/font customization.
